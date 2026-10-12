@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    分类 Mapper XML
+
+    本 Mapper 的重点是演示【一对多映射 <collection>】：
+    一次查询把分类连同它下面的小说列表一起取出来，避免 N+1 查询。
+
+    注意：CategoryMapper 接口上加了 @CacheNamespace，
+    这里【绝不能】再写 <cache>，否则启动报 "Cannot have both namespace-level cache..."。
+    若想在 XML 侧共享同一个缓存，用 <cache-ref namespace="..."/>。
+-->
+<mapper namespace="org.example.mybatis.mapper.CategoryMapper">
+
+    <resultMap id="CategoryWithNovelsMap" type="org.example.mybatis.entity.Category">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="sort_num" property="sortNum"/>
+        <!-- <collection> 一对多：ofType 指定集合中元素的类型 -->
+        <collection property="novels" ofType="org.example.mybatis.entity.Novel">
+            <id column="novel_id" property="id"/>
+            <result column="novel_title" property="title"/>
+            <result column="novel_author" property="author"/>
+            <result column="novel_status" property="status"/>
+            <result column="novel_word_count" property="wordCount"/>
+        </collection>
+    </resultMap>
+
+    <!-- 分类 + 该分类下的小说（一对多） -->
+    <select id="selectWithNovels" resultMap="CategoryWithNovelsMap">
+        SELECT
+            c.id, c.name, c.description, c.sort_num,
+            n.id AS novel_id, n.title AS novel_title, n.author AS novel_author,
+            n.status AS novel_status, n.word_count AS novel_word_count
+        FROM category c
+        LEFT JOIN novel n ON n.category_id = c.id AND n.deleted = 0
+        WHERE c.deleted = 0
+        ORDER BY c.sort_num DESC, n.id ASC
+    </select>
+
+    <!-- 只查含有小说的分类：HAVING + COUNT 函数 -->
+    <select id="selectNonEmpty" resultType="org.example.mybatis.entity.Category">
+        SELECT c.id, c.name, c.description, c.sort_num
+        FROM category c
+        JOIN novel n ON n.category_id = c.id AND n.deleted = 0
+        WHERE c.deleted = 0
+        GROUP BY c.id, c.name, c.description, c.sort_num
+        HAVING COUNT(n.id) &gt; 0
+        ORDER BY c.sort_num DESC
+    </select>
+
+</mapper>

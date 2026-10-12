@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>MyBatis-Plus 实验室 - 单车商城</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        .lab-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+
+        .lab-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .07);
+        }
+
+        .lab-card h3 {
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+
+        .lab-card .desc {
+            font-size: 12px;
+            color: #8a94a6;
+            line-height: 1.7;
+            margin-bottom: 10px;
+        }
+
+        .lab-card .row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .lab-card input, .lab-card select {
+            padding: 6px 8px;
+            border: 1px solid #d7dce5;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .out {
+            background: #1f2430;
+            color: #d7e3ff;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 260px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .out:empty::before {
+            content: '点上面的按钮，结果会显示在这里';
+            color: #6b7689;
+        }
+
+        .stat-line {
+            font-size: 13px;
+            color: #333;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">🧪 MyBatis-Plus 实验室</div>
+    <div class="nav-right">
+        <button class="btn-link" onclick="location.href='/index.html'">商城首页</button>
+        <button class="btn-link" onclick="location.href='/admin.html'">后台管理</button>
+        <button class="btn-link" onclick="location.href='/login.html'">登录页</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="panel" style="margin-bottom:16px">
+        <h3 style="margin-bottom:6px">当前生效的 MP 插件</h3>
+        <div class="desc" style="font-size:12px;color:#8a94a6">下面每一张卡片对应一个插件/特性，点按钮就能看到真实的 SQL 效果</div>
+        <div class="out" id="outPlugins" style="margin-top:8px"></div>
+    </div>
+
+    <div class="lab-grid">
+
+        <!-- 并发控制 -->
+        <div class="lab-card">
+            <h3>① 三种并发控制扣库存</h3>
+            <div class="desc">
+                atomic = 原子 UPDATE（无锁）<br>
+                pessimistic = SELECT ... FOR UPDATE 悲观锁<br>
+                optimistic = @Version 乐观锁（冲突自动重试）<br>
+                先把库存重置成指定值，再开多线程同时抢，三种方式都<b>不会超卖</b>。
+            </div>
+            <div class="row">
+                <select id="cnMode">
+                    <option value="atomic">atomic 原子UPDATE</option>
+                    <option value="pessimistic">pessimistic 悲观锁</option>
+                    <option value="optimistic">optimistic 乐观锁</option>
+                </select>
+                <input id="cnThreads" type="number" value="20" min="1" max="200" style="width:80px" title="并发线程数">
+                <input id="cnStock" type="number" value="10" min="1" style="width:80px" title="重置库存">
+                <button class="btn" onclick="runConcurrent()">开始压测</button>
+            </div>
+            <div class="out" id="outConcurrent"></div>
+        </div>
+
+        <!-- 自动填充 -->
+        <div class="lab-card">
+            <h3>② 自动填充 MetaObjectHandler</h3>
+            <div class="desc">
+                新增一条商品，代码里<b>不写</b> createTime / updateTime，
+                由 MyMetaObjectHandler 回填；再改一次价格，看 updateTime 自动刷新。
+            </div>
+            <div class="row">
+                <button class="btn" onclick="run('fill', 'outFill', 'post')">跑一次</button>
+            </div>
+            <div class="out" id="outFill"></div>
+        </div>
+
+        <!-- 枚举 -->
+        <div class="lab-card">
+            <h3>③ 枚举 @EnumValue / IEnum</h3>
+            <div class="desc">
+                Java 里是 OrderStatus 枚举，数据库里存中文「待发货」，JSON 里是枚举名 WAIT。
+                依赖 {@code default-enum-type-handler} 配置。
+            </div>
+            <div class="row">
+                <button class="btn" onclick="run('enum', 'outEnum', 'post')">下单并改状态</button>
+            </div>
+            <div class="out" id="outEnum"></div>
+        </div>
+
+        <!-- 数据权限 -->
+        <div class="lab-card">
+            <h3>④ 数据权限 DataPermission</h3>
+            <div class="desc">
+                「普通用户只能看自己的订单」不再写在业务代码里，
+                由 DataPermissionInterceptor 自动拼 {@code user_id = ?}；管理员不拼条件看全部。
+            </div>
+            <div class="row">
+                <select id="dpUser">
+                    <option value="2">普通用户 user(id=2)</option>
+                    <option value="1">管理员 admin(id=1)</option>
+                </select>
+                <button class="btn" onclick="runDataPermission()">对比查询</button>
+            </div>
+            <div class="out" id="outDataPermission"></div>
+        </div>
+
+        <!-- 多租户 -->
+        <div class="lab-card">
+            <h3>⑤ 多租户 TenantLine</h3>
+            <div class="desc">
+                插入不写 tenant_id、查询不写 where tenant_id，
+                全由 TenantLineInnerInterceptor 处理（本项目只对 t_tenant_goods 生效，避免污染业务表）。
+            </div>
+            <div class="row">
+                <input id="tnName" value="演示商品" style="width:120px">
+                <button class="btn" onclick="runTenant()">两个租户各写一条</button>
+            </div>
+            <div class="out" id="outTenant"></div>
+        </div>
+
+        <!-- 动态表名 -->
+        <div class="lab-card">
+            <h3>⑥ 动态表名（订单归档）</h3>
+            <div class="desc">
+                同一套 BikeOrderMapper，把上下文切成 t_order_2026，
+                写入和查询就都落到归档表，主表数据不受影响。
+            </div>
+            <div class="row">
+                <input id="dtTable" value="t_order_2026" style="width:150px">
+                <button class="btn" onclick="runDynamicTable()">写归档表并读回</button>
+            </div>
+            <div class="out" id="outDynamicTable"></div>
+        </div>
+
+        <!-- 批量插入 -->
+        <div class="lab-card">
+            <h3>⑦ 批量插入三种写法对比</h3>
+            <div class="desc">
+                逐条 insert（n 次网络往返） vs saveBatch（JDBC Batch） vs
+                insertBatchSomeColumn（一条 SQL 多组 VALUES，需要自定义 SqlInjector）。
+            </div>
+            <div class="row">
+                <input id="btCount" type="number" value="1000" min="1" max="20000" style="width:100px">
+                <button class="btn" onclick="runBatch()">开始对比</button>
+            </div>
+            <div class="out" id="outBatch"></div>
+        </div>
+
+        <!-- 安全防护 -->
+        <div class="lab-card">
+            <h3>⑧ 安全防护 BlockAttack / maxLimit</h3>
+            <div class="desc">
+                BlockAttackInnerInterceptor：不带 where 的 update/delete 直接拒绝。<br>
+                PaginationInnerInterceptor.setMaxLimit(200)：size 再大也只返回 200 条。
+            </div>
+            <div class="row">
+                <button class="btn red" onclick="run('block-attack', 'outSafe')">试一次全表更新</button>
+                <input id="mlSize" type="number" value="10000" style="width:100px">
+                <button class="btn" onclick="runMaxLimit()">超大分页</button>
+            </div>
+            <div class="out" id="outSafe"></div>
+        </div>
+
+        <!-- 代码生成器 -->
+        <div class="lab-card">
+            <h3>⑨ 代码生成器（独立工具）</h3>
+            <div class="desc">
+                tools/CodeGenerator.java 是独立文件（不在 src 里，不参与编译），
+                用 FastAutoGenerator 一次性生成 entity / mapper / service / controller。
+            </div>
+            <div class="out">mvn -B dependency:get -Dartifact=com.baomidou:mybatis-plus-generator:3.5.17
+java -cp "&lt;项目依赖&gt;" tools/CodeGenerator.java
+
+# 生成内容：
+#   entity / mapper / mapper.xml / service / serviceImpl / controller
+# 输出目录可改 OUTPUT_DIR，表可改 INCLUDE_TABLES</div>
+        </div>
+
+    </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script src="/js/lab.js"></script>
+</body>
+</html>

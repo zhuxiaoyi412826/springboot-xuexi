@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>注册 - 视频小站</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <span class="logo">视频小站 <small>注册</small></span>
+    <span class="spacer"></span>
+    <a href="login.html">登录</a>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>注册新账号</h1>
+    <div id="msg"></div>
+    <div class="panel">
+        <div class="row">
+            <label>用户名</label>
+            <input id="username" type="text" placeholder="4~20 位字母数字">
+        </div>
+        <div class="row">
+            <label>密码</label>
+            <input id="password" type="password" placeholder="至少 6 位">
+        </div>
+        <div class="row">
+            <label>昵称</label>
+            <input id="nickname" type="text" placeholder="可留空">
+        </div>
+        <div class="row">
+            <label></label>
+            <button class="green" id="btnReg">注册</button>
+            <a href="login.html"><button class="gray" type="button">去登录</button></a>
+        </div>
+        <div class="muted">注册后密码会用 BCrypt 加密存储，并额外生成 HTTP Digest 所需的 A1 摘要，永不明文落库。</div>
+    </div>
+    <pre class="log" id="log"></pre>
+</div>
+<script src="../js/common.js"></script>
+<script src="../js/register.js"></script>
+</body>
+</html>

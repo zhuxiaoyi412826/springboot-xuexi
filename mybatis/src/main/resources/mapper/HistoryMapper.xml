@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    阅读历史 Mapper XML
+
+    重点：
+      1. INSERT ... ON DUPLICATE KEY UPDATE —— 一条 SQL 实现 upsert（依赖 uk_user_novel 唯一索引）
+      2. 多表 JOIN + 相关子查询算出「下一章序号」
+      3. <trim> 动态拼接 INSERT 的可选列
+-->
+<mapper namespace="org.example.mybatis.mapper.HistoryMapper">
+
+    <!-- ============ upsert：有则更新，无则插入 ============ -->
+    <insert id="upsert" parameterType="org.example.mybatis.entity.ReadingHistory">
+        INSERT INTO reading_history (user_id, novel_id, chapter_id, chapter_no, progress)
+        VALUES (#{userId}, #{novelId}, #{chapterId}, #{chapterNo}, #{progress})
+        ON DUPLICATE KEY UPDATE
+            chapter_id = VALUES(chapter_id),
+            chapter_no = VALUES(chapter_no),
+            progress   = VALUES(progress),
+            last_read_time = NOW()
+    </insert>
+
+    <!-- ============ 我的书架：多表关联 + 子查询 ============ -->
+    <select id="selectMyHistory" resultType="org.example.mybatis.dto.HistoryVO">
+        SELECT
+            h.id, h.novel_id, h.chapter_id, h.chapter_no, h.progress, h.last_read_time,
+            n.title, n.author, n.cover_url, n.chapter_count AS total_chapter,
+            c.name AS category_name,
+            n.tags AS tags,
+            ch.title AS chapter_title,
+            <!-- 下一章序号：取比当前章大的最小序号，没有则为 NULL -->
+            (SELECT MIN(c2.chapter_no) FROM chapter c2
+              WHERE c2.novel_id = n.id AND c2.chapter_no &gt; h.chapter_no) AS next_chapter_no
+        FROM reading_history h
+        JOIN novel n ON n.id = h.novel_id AND n.deleted = 0
+        LEFT JOIN category c ON c.id = n.category_id
+        LEFT JOIN chapter ch ON ch.id = h.chapter_id
+        WHERE h.user_id = #{userId}
+        ORDER BY h.last_read_time DESC
+    </select>
+
+</mapper>

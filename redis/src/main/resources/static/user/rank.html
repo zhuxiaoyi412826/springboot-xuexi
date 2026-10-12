@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>排行榜 - 在线听歌</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="page-title">热歌榜 <span class="small muted">ZSet：播放一次 ZINCRBY +1，实时排序</span></div>
+    <div class="card" id="rank"></div>
+
+    <div class="section-title">热搜榜 <span class="small muted">ZSet：每次搜索给关键词 +1 分</span></div>
+    <div class="card row" id="hot-search"></div>
+</div>
+<script src="/js/common.js"></script>
+<script>
+    renderNav('rank');
+
+    async function loadRank() {
+        try {
+            const list = await api('/api/songs/hot?limit=20');
+            document.getElementById('rank').innerHTML = list.map((s, i) =>
+                '<div class="list-item" onclick=\'Player.play(' + JSON.stringify(s).replace(/'/g, "&apos;") + ')\'>' +
+                '<div class="idx' + (i < 3 ? ' top' : '') + '">' + (i + 1) + '</div>' +
+                '<img src="' + (s.coverUrl || '') + '" onerror="this.style.visibility=\'hidden\'">' +
+                '<div class="grow"><div>' + escapeHtml(s.title) + '</div>' +
+                '<div class="small muted">' + escapeHtml(s.singer) + ' · ' + escapeHtml(s.album || '') + '</div></div>' +
+                '<div class="small muted">▶ ' + fmtCount(s.playCount) + '</div></div>').join('');
+        } catch (e) { toast(e.message, true); }
+    }
+
+    async function loadHotSearch() {
+        try {
+            const list = await api('/api/search/hot?limit=10');
+            document.getElementById('hot-search').innerHTML = list.length ? list.map((k, i) =>
+                '<a href="/user/search.html?q=' + encodeURIComponent(k.keyword) + '" class="badge gray">' +
+                (i + 1) + '. ' + escapeHtml(k.keyword) + ' (' + k.score + ')</a>').join('')
+                : '<span class="muted small">还没有搜索记录，去搜一首歌试试</span>';
+        } catch (e) { /* ignore */ }
+    }
+
+    loadRank();
+    loadHotSearch();
+</script>
+</body>
+</html>

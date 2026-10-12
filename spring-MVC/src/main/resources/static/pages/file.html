@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>⑦ 文件上传下载</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>文件上传下载</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>⑦ 文件上传 / 下载</h1>
+
+    <div class="panel">
+        <h2>上传</h2>
+        <div class="row">
+            <input type="file" id="file1">
+            <button onclick="uploadOne()">单文件 @RequestPart</button>
+        </div>
+        <div class="row">
+            <input type="file" id="file2" multiple>
+            <button onclick="uploadMulti()">多文件 List&lt;MultipartFile&gt;</button>
+        </div>
+        <div class="row">
+            <input type="file" id="file3">
+            <label>标题</label><input id="title" type="text" value="我的文件">
+            <button onclick="uploadWithMeta()">文件 + JSON 元数据（@RequestPart meta）</button>
+        </div>
+        <div class="row">
+            <input type="file" id="file4">
+            <button onclick="uploadPart()">原生 Servlet Part API</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>下载（三种方式）</h2>
+        <div class="row">
+            <label>文件名</label><input id="dlName" type="text" placeholder="先上传，再去 /mvc/file/list 复制文件名">
+            <button onclick="get('/mvc/file/list')">列出已上传文件</button>
+        </div>
+        <div class="row">
+            <button class="green" onclick="download('/mvc/file/download?name=')">ResponseEntity&lt;Resource&gt;</button>
+            <button class="green" onclick="download('/mvc/file/download-bytes?name=')">byte[]</button>
+            <button class="green" onclick="download('/mvc/file/download-stream?name=')">StreamingResponseBody</button>
+        </div>
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+<script>
+    async function uploadOne() {
+        const fd = new FormData();
+        fd.append('file', $('file1').files[0]);
+        await run('POST', '/mvc/file/upload', fd);
+    }
+
+    async function uploadMulti() {
+        const fd = new FormData();
+        for (const f of $('file2').files) fd.append('files', f);
+        await run('POST', '/mvc/file/upload-multi', fd);
+    }
+
+    async function uploadWithMeta() {
+        const fd = new FormData();
+        fd.append('file', $('file3').files[0]);
+        // 关键点：JSON 部分必须指定 Content-Type: application/json
+        fd.append('meta', new Blob([JSON.stringify({ title: $v('title'), remark: '来自页面' })], { type: 'application/json' }));
+        await run('POST', '/mvc/file/upload-with-meta', fd);
+    }
+
+    async function uploadPart() {
+        const fd = new FormData();
+        fd.append('file', $('file4').files[0]);
+        await run('POST', '/mvc/file/upload-part', fd);
+    }
+
+    function download(prefix) {
+        const name = encodeURIComponent($v('dlName'));
+        if (!name) { $('out').textContent = '请先填写文件名（可点击「列出已上传文件」复制）'; return; }
+        location.href = prefix + name;
+    }
+</script>
+</body>
+</html>

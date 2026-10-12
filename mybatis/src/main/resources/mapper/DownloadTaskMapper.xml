@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    下载任务 Mapper XML
+
+    重点：
+      1. 多表 JOIN + 动态条件 + 动态排序
+      2. <foreach> 批量更新
+      3. <choose> 按状态过滤
+-->
+<mapper namespace="org.example.mybatis.mapper.DownloadTaskMapper">
+
+    <resultMap id="TaskVOMap" type="org.example.mybatis.dto.DownloadTaskVO">
+        <id column="id" property="id"/>
+        <result column="task_no" property="taskNo"/>
+        <result column="novel_id" property="novelId"/>
+        <result column="status" property="status"/>
+        <result column="total_chapter" property="totalChapter"/>
+        <result column="done_chapter" property="doneChapter"/>
+        <result column="file_size" property="fileSize"/>
+        <result column="error_msg" property="errorMsg"/>
+        <result column="create_time" property="createTime"/>
+        <result column="start_time" property="startTime"/>
+        <result column="finish_time" property="finishTime"/>
+        <result column="title" property="title"/>
+        <result column="author" property="author"/>
+        <result column="cover_url" property="coverUrl"/>
+    </resultMap>
+
+    <select id="selectByCondition" resultMap="TaskVOMap">
+        SELECT
+            t.id, t.task_no, t.user_id, t.novel_id, t.status, t.total_chapter, t.done_chapter,
+            t.file_size, t.error_msg, t.create_time, t.start_time, t.finish_time,
+            n.title, n.author, n.cover_url
+        FROM download_task t
+        JOIN novel n ON n.id = t.novel_id
+        <where>
+            <if test="userId != null">
+                AND t.user_id = #{userId}
+            </if>
+            <if test="status != null and status != ''">
+                AND t.status = #{status}
+            </if>
+            <if test="statuses != null and statuses.size() &gt; 0">
+                AND t.status IN
+                <foreach collection="statuses" item="s" open="(" separator="," close=")">
+                    #{s}
+                </foreach>
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (n.title LIKE CONCAT('%', #{keyword}, '%') OR t.task_no LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy == 'oldest'">ORDER BY t.create_time ASC</when>
+            <otherwise>ORDER BY t.id DESC</otherwise>
+        </choose>
+    </select>
+
+    <!-- 批量取消：只取消「进行中」的任务，避免误改已完成记录 -->
+    <update id="batchCancel">
+        UPDATE download_task
+        SET status = 'CANCELLED', finish_time = NOW(), error_msg = '用户主动取消'
+        WHERE user_id = #{userId}
+          AND status IN ('QUEUED', 'DOWNLOADING', 'PAUSED')
+          AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    章节 Mapper XML
+
+    重点：
+      1. <foreach> 单条 INSERT 插入多行（上传 TXT 自动分章时一次性入库，性能关键）
+      2. <foreach> 构造 IN 条件批量删除
+      3. <where>/<if>/<choose>/<trim>/<bind> 动态查询
+-->
+<mapper namespace="org.example.mybatis.mapper.ChapterMapper">
+
+    <!-- ============ 批量插入：一条 SQL 写多行 ============ -->
+    <!-- 1000 章只需一次网络往返，比循环 insert 快几十倍 -->
+    <insert id="batchInsert">
+        INSERT INTO chapter (novel_id, chapter_no, title, content, word_count)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.novelId}, #{item.chapterNo}, #{item.title}, #{item.content}, #{item.wordCount})
+        </foreach>
+    </insert>
+
+    <!-- ============ 动态条件查询 ============ -->
+    <select id="selectByCondition" resultType="org.example.mybatis.entity.Chapter">
+        SELECT id, novel_id, chapter_no, title, word_count, create_time
+        FROM chapter
+        <!-- <trim> 自定义前缀/后缀与要忽略的分隔符，等价于 <where> 但更灵活 -->
+        <trim prefix="WHERE" prefixOverrides="AND |OR ">
+            <if test="novelId != null">
+                AND novel_id = #{novelId}
+            </if>
+            <if test="chapterNo != null">
+                AND chapter_no = #{chapterNo}
+            </if>
+            <!-- <bind> 把拼接好的模糊串存成变量，避免在 SQL 里重复写 CONCAT -->
+            <if test="title != null and title != ''">
+                <bind name="titleLike" value="'%' + title + '%'"/>
+                AND title LIKE #{titleLike}
+            </if>
+            <if test="chapterNos != null and chapterNos.size() &gt; 0">
+                AND chapter_no IN
+                <foreach collection="chapterNos" item="no" open="(" separator="," close=")">
+                    #{no}
+                </foreach>
+            </if>
+            <if test="maxChapterNo != null">
+                AND chapter_no &lt;= #{maxChapterNo}
+            </if>
+        </trim>
+        <choose>
+            <when test="orderBy == 'asc'">ORDER BY chapter_no ASC</when>
+            <otherwise>ORDER BY chapter_no DESC</otherwise>
+        </choose>
+    </select>
+
+    <!-- ============ 批量删除 ============ -->
+    <delete id="batchDelete">
+        DELETE FROM chapter
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

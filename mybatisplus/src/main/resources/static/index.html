@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>单车商城 - 自行车售卖</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        .hero {
+            background: linear-gradient(90deg, #1f6feb, #21a179);
+            color: #fff;
+            padding: 26px 0;
+        }
+
+        .hero .container {
+            margin: 0 auto;
+        }
+
+        .hero h2 {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .hero p {
+            opacity: .9;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .07);
+            transition: transform .18s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+        }
+
+        .card .thumb {
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 62px;
+            background: linear-gradient(135deg, #eef3ff, #e6f7f1);
+        }
+
+        .card .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .card .body {
+            padding: 14px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card .name {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .card .meta {
+            font-size: 12px;
+            color: #8a94a6;
+            margin-bottom: 8px;
+        }
+
+        .card .desc {
+            font-size: 12px;
+            color: #6b7484;
+            line-height: 1.6;
+            flex: 1;
+            margin-bottom: 10px;
+        }
+
+        .card .price-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+        }
+
+        .card .price {
+            color: #e5533d;
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .order-list .item {
+            border: 1px solid #eef0f4;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .order-list .item .top {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">🚲 单车商城</div>
+    <div class="nav-right">
+        <span id="welcome"></span>
+        <button class="btn-link" onclick="location.href='/lab.html'">MP 实验室</button>
+        <button class="btn-link" id="btnMyOrder">我的订单</button>
+        <button class="btn-link" onclick="logout()">退出登录</button>
+    </div>
+</div>
+
+<div class="hero">
+    <div class="container">
+        <h2>选一辆好车，出发吧</h2>
+        <p>山地车 · 公路车 · 折叠车 · 城市车 · 儿童车，全部正品直供</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="panel" style="margin-bottom:18px">
+        <div class="inline">
+            <div class="form-item">
+                <label>关键字</label>
+                <input id="keyword" placeholder="车名 / 品牌 / 分类">
+            </div>
+            <div class="form-item">
+                <label>分类</label>
+                <select id="category">
+                    <option value="">全部</option>
+                    <option>山地车</option>
+                    <option>公路车</option>
+                    <option>折叠车</option>
+                    <option>城市车</option>
+                    <option>儿童车</option>
+                </select>
+            </div>
+            <div class="form-item">
+                <label>价格下限</label>
+                <input id="minPrice" type="number" min="0" placeholder="0" style="min-width:110px">
+            </div>
+            <div class="form-item">
+                <label>价格上限</label>
+                <input id="maxPrice" type="number" min="0" placeholder="不限" style="min-width:110px">
+            </div>
+            <div class="form-item">
+                <label>排序</label>
+                <select id="orderBy">
+                    <option value="id_desc">最新上架</option>
+                    <option value="price_asc">价格从低到高</option>
+                    <option value="price_desc">价格从高到低</option>
+                    <option value="stock_desc">库存优先</option>
+                    <option value="sold_desc">销量优先</option>
+                </select>
+            </div>
+            <button class="btn" id="btnSearch">搜索</button>
+            <button class="btn gray" id="btnReset">重置</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">在售商品</div>
+        <div class="grid" id="bikeGrid"></div>
+        <div class="empty" id="bikeEmpty" style="display:none">暂无商品</div>
+        <div class="pager" id="bikePager"></div>
+    </div>
+</div>
+
+<!-- 下单弹窗 -->
+<div class="modal-mask" id="buyMask">
+    <div class="modal">
+        <h3>确认下单</h3>
+        <div class="form-item">
+            <label>商品</label>
+            <input id="buyBikeName" disabled>
+        </div>
+        <div class="form-item">
+            <label>购买数量</label>
+            <input id="buyQuantity" type="number" min="1" value="1">
+        </div>
+        <div class="form-item">
+            <label>收货人</label>
+            <input id="buyReceiver" placeholder="收货人姓名">
+        </div>
+        <div class="form-item">
+            <label>联系电话</label>
+            <input id="buyPhone" placeholder="手机号">
+        </div>
+        <div class="form-item">
+            <label>收货地址</label>
+            <textarea id="buyAddress" rows="2" placeholder="详细收货地址"></textarea>
+        </div>
+        <div class="form-item">
+            <label>库存扣减方式</label>
+            <select id="buyLock">
+                <option value="atomic">原子 UPDATE（默认，无锁）</option>
+                <option value="pessimistic">悲观锁 SELECT ... FOR UPDATE</option>
+                <option value="optimistic">乐观锁 @Version</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn gray" onclick="closeBuy()">取消</button>
+            <button class="btn green" id="btnSubmitOrder">提交订单</button>
+        </div>
+    </div>
+</div>
+
+<!-- 我的订单弹窗 -->
+<div class="modal-mask" id="orderMask">
+    <div class="modal" style="width:620px">
+        <h3>我的订单</h3>
+        <div class="order-list" id="orderList"></div>
+        <div class="empty" id="orderEmpty" style="display:none">还没有订单</div>
+        <div class="pager" id="orderPager"></div>
+        <div class="modal-footer">
+            <button class="btn gray" onclick="closeOrders()">关闭</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+    let currentUser = null;
+    let pageNum = 1;
+    let buyBike = null;
+
+    const EMOJI = {'山地车': '⛰️', '公路车': '🏁', '折叠车': '🧳', '城市车': '🏙️', '儿童车': '🧒'};
+    // 后端 status 现在是枚举：JSON 里是枚举名（WAIT/SENT/DONE/CANCEL），这里映射成中文展示
+    const STATUS_TEXT = {WAIT: '待发货', SENT: '已发货', DONE: '已完成', CANCEL: '已取消'};
+    const statusText = s => STATUS_TEXT[s] || s;
+    const statusTag = s => ({WAIT: 'orange', SENT: 'blue', DONE: 'green', CANCEL: 'gray'}[s] || 'gray');
+
+    /** 加载商品（走动态 SQL 检索接口 impl=xml） */
+    async function loadBikes(page = 1) {
+        pageNum = page;
+        const query = buildQuery();
+        const url = `/api/bikes/search?impl=xml&current=${page}&size=8&${query}`;
+        const data = await get(url);
+
+        const grid = document.getElementById('bikeGrid');
+        grid.innerHTML = data.records.map(b => `
+            <div class="card">
+                <div class="thumb">${b.imageUrl ? `<img src="${escapeHtml(b.imageUrl)}" alt="">` : (EMOJI[b.category] || '🚲')}</div>
+                <div class="body">
+                    <div class="name">${escapeHtml(b.name)}</div>
+                    <div class="meta">${escapeHtml(b.brand || '')} · ${escapeHtml(b.category || '')} · 库存 ${b.stock} · 已售 ${b.soldCount ?? 0}</div>
+                    <div class="desc">${escapeHtml(b.description || '暂无描述')}</div>
+                    <div class="price-row">
+                        <span class="price">${money(b.price)}</span>
+                        <button class="btn small ${b.stock > 0 ? '' : 'gray'}" ${b.stock > 0 ? '' : 'disabled'}
+                                onclick='openBuy(${JSON.stringify(b).replace(/'/g, "\\'")})'>
+                            ${b.stock > 0 ? '立即购买' : '已售罄'}
+                        </button>
+                    </div>
+                </div>
+            </div>`).join('');
+
+        document.getElementById('bikeEmpty').style.display = data.records.length ? 'none' : 'block';
+        renderPager(document.getElementById('bikePager'), data, loadBikes);
+    }
+
+    /** 组装检索参数（对应后端 BikeQuery 的动态条件） */
+    function buildQuery() {
+        const p = new URLSearchParams();
+        const keyword = document.getElementById('keyword').value.trim();
+        const category = document.getElementById('category').value;
+        const minPrice = document.getElementById('minPrice').value;
+        const maxPrice = document.getElementById('maxPrice').value;
+        const orderBy = document.getElementById('orderBy').value;
+        if (keyword) p.set('keyword', keyword);
+        if (category) p.set('categories', category);
+        if (minPrice) p.set('minPrice', minPrice);
+        if (maxPrice) p.set('maxPrice', maxPrice);
+        if (orderBy) p.set('orderBy', orderBy);
+        return p.toString();
+    }
+
+    /** 打开下单弹窗 */
+    function openBuy(bike) {
+        if (!currentUser) {
+            toast('请先登录');
+            return;
+        }
+        buyBike = bike;
+        document.getElementById('buyBikeName').value = `${bike.name}（${money(bike.price)}）`;
+        document.getElementById('buyQuantity').value = 1;
+        document.getElementById('buyReceiver').value = currentUser.nickname || '';
+        document.getElementById('buyPhone').value = currentUser.phone || '';
+        document.getElementById('buyAddress').value = currentUser.address || '';
+        document.getElementById('buyMask').classList.add('show');
+    }
+
+    function closeBuy() {
+        document.getElementById('buyMask').classList.remove('show');
+    }
+
+    /** 提交订单 */
+    document.getElementById('btnSubmitOrder').onclick = () => safe(async () => {
+        const qty = Number(document.getElementById('buyQuantity').value);
+        if (!qty || qty < 1) return toast('数量必须大于 0');
+        const address = document.getElementById('buyAddress').value.trim();
+        if (!address) return toast('请填写收货地址');
+
+        const lock = document.getElementById('buyLock').value;
+        await post(`/api/orders?lock=${encodeURIComponent(lock)}`, {
+            bikeId: buyBike.id,
+            quantity: qty,
+            receiver: document.getElementById('buyReceiver').value.trim(),
+            phone: document.getElementById('buyPhone').value.trim(),
+            address: address
+        });
+        closeBuy();
+        toast('下单成功');
+        loadBikes(pageNum);
+    });
+
+    /** 我的订单 */
+    let orderPageNum = 1;
+
+    async function loadMyOrders(page = 1) {
+        orderPageNum = page;
+        const data = await get(`/api/orders/my?current=${page}&size=5`);
+        document.getElementById('orderList').innerHTML = data.records.map(o => `
+            <div class="item">
+                <div class="top">
+                    <span><b>${escapeHtml(o.bikeName)}</b> × ${o.quantity}</span>
+                    <span class="tag ${statusTag(o.status)}">${escapeHtml(statusText(o.status))}</span>
+                </div>
+                <div>订单号：${escapeHtml(o.orderNo)}　金额：<b style="color:#e5533d">${money(o.totalAmount)}</b></div>
+                <div>收货：${escapeHtml(o.receiver || '')} ${escapeHtml(o.phone || '')} ${escapeHtml(o.address || '')}</div>
+                <div style="color:#8a94a6">下单时间：${escapeHtml(o.createTime || '')}
+                    ${o.status === 'WAIT' ? `<button class="btn small red" style="margin-left:10px" onclick="cancelOrder(${o.id})">取消订单</button>` : ''}
+                </div>
+            </div>`).join('');
+        document.getElementById('orderEmpty').style.display = data.records.length ? 'none' : 'block';
+        renderPager(document.getElementById('orderPager'), data, loadMyOrders);
+    }
+
+    async function cancelOrder(id) {
+        if (!confirm('确定取消该订单吗？库存会归还。')) return;
+        await safe(async () => {
+            await del(`/api/orders/${id}`);
+            toast('订单已取消');
+            await loadMyOrders(orderPageNum);
+            await loadBikes(pageNum);
+        });
+    }
+
+    function openOrders() {
+        document.getElementById('orderMask').classList.add('show');
+        safe(() => loadMyOrders(1));
+    }
+
+    function closeOrders() {
+        document.getElementById('orderMask').classList.remove('show');
+    }
+
+    /** 初始化 */
+    (async () => {
+        currentUser = await get('/api/auth/info').catch(() => null);
+        if (!currentUser) {
+            location.href = '/login.html';
+            return;
+        }
+        document.getElementById('welcome').textContent = `欢迎你，${currentUser.nickname || currentUser.username}`;
+        document.getElementById('btnMyOrder').onclick = openOrders;
+        document.getElementById('btnSearch').onclick = () => safe(() => loadBikes(1));
+        document.getElementById('btnReset').onclick = () => {
+            document.getElementById('keyword').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('minPrice').value = '';
+            document.getElementById('maxPrice').value = '';
+            document.getElementById('orderBy').value = 'id_desc';
+            safe(() => loadBikes(1));
+        };
+        await safe(() => loadBikes(1));
+    })();
+</script>
+</body>
+</html>

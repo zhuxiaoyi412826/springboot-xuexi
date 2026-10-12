@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>⑨ 国际化</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>国际化</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>⑨ 国际化（i18n）</h1>
+
+    <div class="panel">
+        <h2>MessageSource 取文案</h2>
+        <div class="row">
+            <label>code</label><input id="code" type="text" value="welcome">
+            <button onclick="get('/mvc/i18n/msg?code=' + $v('code'))">/mvc/i18n/msg</button>
+            <button onclick="get('/mvc/i18n/msg-args?name=张三')">带占位符 {0}</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>切换语言</h2>
+        <div class="tip">
+            任意接口加 <code>?lang=en_US</code> 即可切换（LocaleChangeInterceptor），
+            语言保存在 SessionLocaleResolver 中。
+        </div>
+        <div class="row">
+            <button onclick="get('/mvc/i18n/locale')">查看当前 Locale</button>
+            <button onclick="get('/mvc/i18n/msg?code=welcome&lang=en_US')">切换为 en_US 并取文案</button>
+            <button onclick="get('/mvc/i18n/msg?code=welcome&lang=zh_CN')">切换回 zh_CN</button>
+            <button onclick="get('/mvc/i18n/change?lang=en-US')">编程式切换（LocaleResolver#setLocale）</button>
+        </div>
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+</body>
+</html>

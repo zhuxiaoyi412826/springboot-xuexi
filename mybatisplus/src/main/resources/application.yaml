@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: bike-shop
+
+  # ============ MySQL 数据源 ============
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # createDatabaseIfNotExist=true：数据库不存在时自动创建 bike_shop
+    # rewriteBatchedStatements=true：让 JDBC 的 addBatch 真正变成批量包（saveBatch 性能关键）
+    url: jdbc:mysql://127.0.0.1:3306/bike_shop?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true
+    username: root
+    password: '412826'
+    hikari:
+      # 实验室的乐观锁压测会开 REQUIRES_NEW 新事务（每次重试都要一条新连接），
+      # 并发一大默认 10 条连接会直接被打爆，这里放宽一些
+      maximum-pool-size: 60
+      minimum-idle: 10
+      connection-timeout: 10000
+
+  # ============ 启动时自动建表 + 初始化演示数据 ============
+  # 建表语句用了 IF NOT EXISTS、初始化数据用了 INSERT IGNORE，重复启动不会覆盖已有数据
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+      continue-on-error: false
+
+server:
+  port: 8080
+
+# ============ 自定义 ============
+bike:
+  order:
+    # 仅演示用：悲观锁持锁后暂停多少毫秒，用来放大并发窗口、观察锁的串行化效果
+    # 设为 0（默认）即不暂停；想看效果可设成 500，然后并发下单观察总耗时
+    lock-demo-delay-ms: 0
+
+# ============ MyBatis-Plus ============
+mybatis-plus:
+  # 自定义 Mapper XML 的位置（动态 SQL 的 XML 实现放这里）
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    # 控制台打印 SQL，方便学习观察
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+    # 枚举：用 MP 的枚举处理器，@EnumValue / IEnum 才会生效
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+logging:
+  level:
+    org.example.mybatisplus: debug

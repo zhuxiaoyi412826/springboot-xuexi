@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>歌单 - 在线听歌</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="card" id="playlist-box"></div>
+    <div class="section-title">歌曲 <span class="small muted">歌曲 id 列表缓存为 Redis List</span></div>
+    <div class="card" id="songs"></div>
+
+    <div class="section-title">公开歌单</div>
+    <div class="card" id="playlists"></div>
+</div>
+<script src="/js/common.js"></script>
+<script>
+    renderNav('index');
+    const id = new URLSearchParams(location.search).get('id');
+
+    async function loadDetail() {
+        if (!id) return;
+        try {
+            const p = await api('/api/playlists/' + id);
+            document.getElementById('playlist-box').innerHTML =
+                '<div style="font-size:20px;font-weight:700">' + escapeHtml(p.name) + '</div>' +
+                '<div class="muted small">' + escapeHtml(p.description || '') + '</div>';
+            document.getElementById('songs').innerHTML = (p.songs || []).map(s =>
+                '<div class="list-item" onclick=\'Player.play(' + JSON.stringify(s).replace(/'/g, "&apos;") + ')\'>' +
+                '<img src="' + (s.coverUrl || '') + '" onerror="this.style.visibility=\'hidden\'">' +
+                '<div class="grow"><div>' + escapeHtml(s.title) + '</div><div class="small muted">' + escapeHtml(s.singer) + '</div></div>' +
+                '<div class="small muted">' + fmtDuration(s.duration) + '</div></div>').join('');
+        } catch (e) { toast(e.message, true); }
+    }
+
+    async function loadPlaylists() {
+        try {
+            const data = await api('/api/playlists/list?page=1&size=12');
+            document.getElementById('playlists').innerHTML = (data.list || []).map(p =>
+                '<div class="list-item"><div class="grow">' +
+                '<a href="/user/playlist.html?id=' + p.id + '">' + escapeHtml(p.name) + '</a>' +
+                '<div class="small muted">' + escapeHtml(p.description || '') + ' · ' + (p.songs ? p.songs.length : 0) + ' 首</div>' +
+                '</div><span class="badge gray">' + (p.status === 1 ? '公开' : p.status === 2 ? '待审核' : '私有') + '</span></div>'
+            ).join('');
+        } catch (e) { /* ignore */ }
+    }
+
+    loadDetail();
+    loadPlaylists();
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>批量上架商品 - 单车商城后台</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        .hint {
+            font-size: 12px;
+            color: #8a94a6;
+            line-height: 1.8;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            border: 1px solid #d7dce5;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .result {
+            background: #1f2430;
+            color: #d7e3ff;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            white-space: pre-wrap;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">📦 批量上架商品</div>
+    <div class="nav-right">
+        <button class="btn-link" onclick="location.href='/admin.html'">后台管理</button>
+        <button class="btn-link" onclick="location.href='/lab.html'">MP 实验室</button>
+        <button class="btn-link" onclick="logout()">退出登录</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <h3 style="margin-bottom:6px">批量导入（insertBatchSomeColumn）</h3>
+        <div class="hint">
+            每行一条商品：<b>名称,品牌,分类,单价,库存</b>（分类：山地车/公路车/折叠车/城市车/儿童车）<br>
+            点下面的按钮可以先填 20 条示例数据；写入走的是自定义 SQL 注入器，一条 INSERT 多组 VALUES。
+        </div>
+        <textarea id="batchText" rows="12" placeholder="捷安特 ATX 860,捷安特,山地车,3299,50"></textarea>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn gray" onclick="fillSample()">填充示例（20 条）</button>
+            <button class="btn green" onclick="submitBatch()">批量上架</button>
+            <span id="batchMsg" style="font-size:13px;color:#1f6feb;line-height:34px"></span>
+        </div>
+        <div class="result" id="batchResult"></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+        <h3 style="margin-bottom:6px">订单状态统计</h3>
+        <div class="hint">QueryWrapper 的 select + groupBy 聚合（GET /api/orders/stat，仅管理员）</div>
+        <button class="btn" onclick="loadStat()">刷新统计</button>
+        <div class="result" id="statResult"></div>
+    </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script src="/js/batch.js"></script>
+</body>
+</html>

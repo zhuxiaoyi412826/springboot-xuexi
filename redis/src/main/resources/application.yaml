@@ -1,0 +1,97 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: music-redis
+  # ============ MySQL ============
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/music_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: root
+    password: 412826
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  # ============ Redis ============
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      # 本机实测未设置 requirepass，留空；若你的 Redis 有密码请填这里
+      password:
+      database: 0
+      timeout: 5s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+  # ============ 首次启动自动建库建表与演示数据 ============
+  # 不想自动初始化就改成 never，然后手动执行 src/main/resources/db 下的两个 SQL
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+      continue-on-error: true
+      separator: ;
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ============ Sa-Token ============
+sa-token:
+  token-name: satoken
+  timeout: 7200                 # token 有效期（秒）
+  active-timeout: 1800          # 半小时无操作冻结
+  is-concurrent: true           # 允许并发登录
+  is-share: true                # 并发时共享一个 token
+  token-style: uuid
+  is-log: false
+  is-read-header: true
+  is-read-body: true
+
+# ============ Knife4j ============
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+knife4j:
+  enable: true
+  setting:
+    language: zh-CN
+    enable-footer: false
+
+# ============ 自定义：多级缓存 ============
+music:
+  cache:
+    l1-enabled: true            # L1：Caffeine 本地缓存
+    l2-enabled: true            # L2：Redis 分布式缓存
+    l3-enabled: true            # L3：MySQL 数据源（回源）
+    l1-ttl-seconds: 60
+    l2-ttl-seconds: 600
+    l2-jitter-seconds: 120      # 过期时间随机抖动，防雪崩
+    null-ttl-seconds: 60        # 空值缓存，防穿透
+    logical-expire-seconds: 300 # 热点 key 逻辑过期时间
+    lock-wait-seconds: 5        # 重建缓存互斥锁等待
+    bloom-enabled: true         # 布隆过滤器（防穿透）
+    stats-enabled: true
+
+logging:
+  level:
+    root: info
+    org.example.redis: debug

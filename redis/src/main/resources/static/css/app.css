@@ -1,0 +1,137 @@
+/* 在线听歌网站：统一深色音乐风 */
+:root {
+    --bg: #0f1117;
+    --bg-card: #181b24;
+    --bg-hover: #222634;
+    --primary: #1ed760;
+    --primary-dark: #1db954;
+    --text: #e8eaf0;
+    --text-dim: #9aa3b2;
+    --border: #262a36;
+    --danger: #ff5c5c;
+    --warn: #ffb020;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+    font-size: 14px;
+}
+
+a { color: var(--text); text-decoration: none; }
+a:hover { color: var(--primary); }
+
+/* ---------- 顶部导航 ---------- */
+.navbar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 0 24px;
+    height: 60px;
+    background: #10131a;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+.navbar .logo { font-size: 18px; font-weight: 700; color: var(--primary); }
+.navbar .nav-links { display: flex; gap: 16px; flex: 1; }
+.navbar .nav-right { display: flex; align-items: center; gap: 12px; color: var(--text-dim); }
+.badge {
+    padding: 2px 8px; border-radius: 10px; font-size: 12px;
+    background: var(--primary); color: #06210f; font-weight: 600;
+}
+.badge.gray { background: #394150; color: #cfd6e4; }
+.badge.red { background: var(--danger); color: #fff; }
+
+/* ---------- 布局 ---------- */
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.grid { display: grid; gap: 16px; }
+.grid-songs { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.page-title { font-size: 20px; font-weight: 700; margin: 4px 0 16px; }
+.section-title { font-size: 16px; font-weight: 600; margin: 24px 0 12px; display: flex; justify-content: space-between; align-items: center; }
+.muted { color: var(--text-dim); }
+.small { font-size: 12px; }
+
+/* ---------- 歌曲卡片 ---------- */
+.song-card { background: var(--bg-card); border-radius: 10px; padding: 12px; cursor: pointer; transition: .2s; border: 1px solid transparent; }
+.song-card:hover { background: var(--bg-hover); border-color: var(--primary); transform: translateY(-2px); }
+.song-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: #222634; }
+.song-card .title { margin-top: 8px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-card .singer { color: var(--text-dim); font-size: 12px; }
+
+/* ---------- 列表 ---------- */
+.list-item { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; }
+.list-item:hover { background: var(--bg-hover); }
+.list-item .idx { width: 28px; text-align: center; color: var(--text-dim); font-weight: 700; }
+.list-item .idx.top { color: var(--primary); }
+.list-item img { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; }
+.list-item .grow { flex: 1; min-width: 0; }
+.list-item .grow div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 表单 / 按钮 ---------- */
+input, select, textarea {
+    background: #0d1016; border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 8px 10px; outline: none; font-size: 14px;
+}
+input:focus, textarea:focus { border-color: var(--primary); }
+button, .btn {
+    background: var(--primary); color: #06210f; border: none; padding: 8px 16px;
+    border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 14px;
+}
+button:hover { background: var(--primary-dark); }
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+button.ghost:hover { border-color: var(--primary); color: var(--primary); }
+button.danger { background: var(--danger); color: #fff; }
+button.tiny { padding: 4px 10px; font-size: 12px; border-radius: 12px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--text-dim); font-weight: 600; }
+tr:hover td { background: var(--bg-hover); }
+
+/* ---------- 播放器 ---------- */
+.player {
+    position: fixed; left: 0; right: 0; bottom: 0; height: 72px; z-index: 30;
+    background: #14171f; border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px; padding: 0 24px;
+}
+.player img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; }
+.player .info { width: 200px; }
+.player .info div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player audio { flex: 1; height: 36px; }
+body.has-player { padding-bottom: 80px; }
+
+/* ---------- 登录页 ---------- */
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.login-box { width: 380px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 32px; }
+.login-box h1 { margin: 0 0 6px; font-size: 22px; }
+.login-box .field { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.login-box input { width: 100%; }
+.login-box button { width: 100%; margin-top: 18px; padding: 10px; }
+.login-tip { margin-top: 14px; font-size: 12px; color: var(--text-dim); line-height: 1.8; }
+
+/* ---------- 管理端 ---------- */
+.admin-layout { display: flex; min-height: 100vh; }
+.admin-side { width: 190px; background: #10131a; border-right: 1px solid var(--border); padding: 16px 10px; }
+.admin-side a { display: block; padding: 10px 14px; border-radius: 8px; margin-bottom: 4px; }
+.admin-side a.active { background: var(--bg-hover); color: var(--primary); font-weight: 600; }
+.admin-main { flex: 1; padding: 20px 24px; overflow-x: hidden; }
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.stat-card .num { font-size: 22px; font-weight: 700; color: var(--primary); }
+.stat-card .label { color: var(--text-dim); font-size: 12px; }
+
+pre.json { background: #0d1016; border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow: auto; max-height: 320px; font-size: 12px; }
+.toast {
+    position: fixed; top: 20px; right: 20px; background: #222634; border: 1px solid var(--border);
+    padding: 10px 16px; border-radius: 8px; z-index: 99;
+}
+.toast.error { border-color: var(--danger); color: var(--danger); }
+.hidden { display: none !important; }

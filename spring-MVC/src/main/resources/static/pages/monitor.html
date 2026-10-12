@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>⑬ 运行时观察</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>运行时观察</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>⑬ 观察 Spring MVC 内部</h1>
+
+    <div class="panel">
+        <h2>HandlerMapping 中注册的全部映射</h2>
+        <div class="row">
+            <button class="green" onclick="get('/mvc/monitor/mappings')">/mvc/monitor/mappings</button>
+            <button onclick="get('/mvc/monitor/sessions')">在线会话数（HttpSessionListener 统计）</button>
+            <button onclick="get('/mvc/monitor/request-id')">请求 ID（Filter 写入 request）</button>
+            <button onclick="location.href='/my-servlet?name=Tom'">原生 Servlet /my-servlet</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>组件职责速查</h2>
+        <table>
+            <tr><th>组件</th><th>作用</th><th>本项目实现</th></tr>
+            <tr><td>DispatcherServlet</td><td>前端控制器，统一入口</td><td>Spring Boot 自动注册（/）</td></tr>
+            <tr><td>HandlerMapping</td><td>URL → Handler 映射</td><td>RequestMappingHandlerMapping（见 mappings 接口）</td></tr>
+            <tr><td>HandlerAdapter</td><td>执行 Handler，解析参数/返回值</td><td>RequestMappingHandlerAdapter（+ 自定义解析器）</td></tr>
+            <tr><td>HandlerExceptionResolver</td><td>异常处理链</td><td>MyHandlerExceptionResolver + @ControllerAdvice</td></tr>
+            <tr><td>ViewResolver</td><td>视图名 → View</td><td>StaticViewResolver</td></tr>
+            <tr><td>LocaleResolver</td><td>解析语言</td><td>SessionLocaleResolver</td></tr>
+            <tr><td>MultipartResolver</td><td>文件上传解析</td><td>StandardServletMultipartResolver（自动配置）</td></tr>
+            <tr><td>FlashMapManager</td><td>重定向传参</td><td>SessionFlashMapManager（RedirectAttributes）</td></tr>
+        </table>
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>阅读 - 小说阅读器</title>
+    <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+<div class="topbar"><div class="inner"></div></div>
+
+<div class="reader-wrap">
+    <!-- 目录 -->
+    <div class="catalog">
+        <div class="title">
+            <a href="#" id="backLink" style="padding:0;color:#666">← 返回书架</a>
+            <div id="catalogTitle" style="margin-top:6px;font-size:13px;color:#999"></div>
+        </div>
+        <div id="catalogList"></div>
+    </div>
+
+    <!-- 正文 -->
+    <div class="reader-main">
+        <h2 id="chapterTitle">加载中…</h2>
+        <div class="reader-content" id="chapterContent"></div>
+        <div class="reader-nav">
+            <button class="btn gray" id="btnPrev">← 上一章</button>
+            <button class="btn orange" id="btnFav">收藏本书</button>
+            <button class="btn blue" id="btnDownload">下载全本</button>
+            <button class="btn gray" id="btnNext">下一章 →</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+    const novelId = getParam('novelId');
+    let chapterId = getParam('chapterId');
+    let novelInfo = null;
+    let currentChapter = null;
+
+    document.getElementById('backLink').href = 'index.html';
+
+    async function loadCatalog() {
+        const list = await get(`/api/chapters/catalog/${novelId}`);
+        if (!list) return;
+        document.getElementById('catalogList').innerHTML = list.map(c => `
+            <a href="javascript:go(${c.id})" id="cl-${c.id}" class="${String(c.id) === String(chapterId) ? 'active' : ''}"
+               title="${escapeHtml(c.title)}">${escapeHtml(c.title)}</a>`).join('');
+    }
+
+    async function loadChapter(id) {
+        const data = await get(`/api/chapters/${id}`);
+        if (!data) return;
+        currentChapter = data.chapter;
+        chapterId = data.chapter.id;
+
+        document.getElementById('chapterTitle').textContent = data.chapter.title;
+        document.getElementById('chapterContent').textContent = data.chapter.content || '（本章暂无内容）';
+
+        document.querySelectorAll('.catalog a').forEach(a => a.classList.remove('active'));
+        const active = document.getElementById('cl-' + data.chapter.id);
+        if (active) {
+            active.classList.add('active');
+            active.scrollIntoView({ block: 'center' });
+        }
+
+        const prevId = data.prevId;
+        const nextId = data.nextId;
+        document.getElementById('btnPrev').disabled = !prevId;
+        document.getElementById('btnNext').disabled = !nextId;
+        document.getElementById('btnPrev').onclick = () => prevId && go(prevId);
+        document.getElementById('btnNext').onclick = () => nextId && go(nextId);
+        document.getElementById('btnNext').title = data.nextTitle || '下一章';
+
+        history.replaceState(null, '', `reader.html?novelId=${novelId}&chapterId=${data.chapter.id}`);
+
+        // 记录阅读进度（图书 MySQL upsert）
+        recordProgress(data.chapter.novelId, data.chapter.id, data.chapter.chapterNo);
+    }
+
+    async function recordProgress(nid, cid, cno) {
+        await post('/api/history', { novelId: nid, chapterId: cid, chapterNo: cno, progress: 0 });
+    }
+
+    function go(id) {
+        chapterId = id;
+        return loadChapter(id).then(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    }
+
+    async function loadNovelInfo() {
+        novelInfo = await get(`/api/novels/${novelId}`);
+        if (!novelInfo) return;
+        document.getElementById('catalogTitle').textContent = novelInfo.title;
+        document.title = novelInfo.title + ' - 阅读';
+        document.getElementById('btnFav').textContent = novelInfo.favorited ? '取消收藏' : '收藏本书';
+    }
+
+    document.getElementById('btnFav').onclick = () => safe(async () => {
+        await post(`/api/favorites/toggle/${novelId}`, {});
+        await loadNovelInfo();
+        toast('操作成功');
+    });
+
+    document.getElementById('btnDownload').onclick = () => safe(async () => {
+        await post(`/api/downloads/create/${novelId}`, {});
+        toast('已加入下载队列');
+    });
+
+    // 快捷键翻页
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft') document.getElementById('btnPrev').click();
+        if (e.key === 'ArrowRight') document.getElementById('btnNext').click();
+    });
+
+    (async () => {
+        const u = await requireLogin();
+        if (!u) return;
+        renderTopbar('index');
+        await loadNovelInfo();
+        await loadCatalog();
+        await loadChapter(chapterId);
+    })();
+</script>
+</body>
+</html>

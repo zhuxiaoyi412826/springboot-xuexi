@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>视频首页 - 视频小站</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div id="topbar" class="topbar"></div>
+<div class="container">
+    <h1>视频首页</h1>
+    <div id="msg"></div>
+
+    <div class="panel">
+        <div class="row">
+            <label>关键字</label>
+            <input id="keyword" type="text" placeholder="搜索标题或简介">
+            <label style="min-width:auto">分类</label>
+            <select id="category">
+                <option value="">全部</option>
+                <option value="影视">影视</option>
+                <option value="科技">科技</option>
+                <option value="教育">教育</option>
+                <option value="汽车">汽车</option>
+                <option value="音乐">音乐</option>
+                <option value="生活">生活</option>
+            </select>
+            <label style="min-width:auto">排序</label>
+            <select id="sort">
+                <option value="new">最新</option>
+                <option value="hot">最热</option>
+            </select>
+            <button id="btnSearch">搜索</button>
+            <button class="gray" id="btnHot">热门 Top10</button>
+        </div>
+        <div class="muted">
+            数据权限演示：匿名只能看到「已公开」视频；登录后还能看到自己上传的（含私有/待审核）；管理员能看到全部。
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="grid" id="grid"></div>
+        <div class="row" style="margin-top:12px">
+            <button class="gray" id="btnPrev">上一页</button>
+            <span id="pageInfo" class="muted"></span>
+            <button class="gray" id="btnNext">下一页</button>
+            <span class="muted">（列表接口匿名可访问，无需登录）</span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>最近一次响应</h2>
+        <pre class="log" id="log"></pre>
+    </div>
+</div>
+<script src="../js/common.js"></script>
+<script src="../js/home.js"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>发现音乐 - 在线听歌</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="section-title">
+        <span id="cate-title">全部歌曲</span>
+        <span class="small muted">列表走 L1(Caffeine) → L2(Redis) → L3(MySQL) 三级缓存</span>
+    </div>
+    <div class="row" style="margin-bottom:12px">
+        <button class="ghost tiny" onclick="load('')">全部</button>
+        <button class="ghost tiny" onclick="load('流行')">流行</button>
+        <button class="ghost tiny" onclick="load('民谣')">民谣</button>
+        <button class="ghost tiny" onclick="load('摇滚')">摇滚</button>
+        <button class="ghost tiny" onclick="load('电子')">电子</button>
+        <button class="ghost tiny" onclick="load('古典')">古典</button>
+    </div>
+    <div class="grid grid-songs" id="songs"></div>
+    <div class="row" style="justify-content:center;margin-top:16px">
+        <button class="ghost tiny" onclick="goPage(-1)">上一页</button>
+        <span class="muted small" id="page-info"></span>
+        <button class="ghost tiny" onclick="goPage(1)">下一页</button>
+    </div>
+
+    <div class="section-title">热歌榜 <span class="small muted">ZSet 实时排序</span></div>
+    <div class="card" id="hot"></div>
+</div>
+<script src="/js/common.js"></script>
+<script>
+    renderNav('index');
+    let page = 1, category = '';
+
+    async function load(cate) {
+        category = cate || '';
+        page = 1;
+        await loadPage();
+    }
+
+    async function loadPage() {
+        try {
+            const data = await api('/api/songs/list?page=' + page + '&size=12&category=' + encodeURIComponent(category));
+            document.getElementById('cate-title').innerText = (category || '全部') + '歌曲';
+            document.getElementById('songs').innerHTML = (data.list || []).map(songCardHtml).join('');
+            document.getElementById('page-info').innerText = '第 ' + data.page + ' 页 / 共 ' + data.total + ' 首';
+        } catch (e) { toast(e.message, true); }
+    }
+
+    function goPage(delta) {
+        page = Math.max(1, page + delta);
+        loadPage();
+    }
+
+    async function loadHot() {
+        try {
+            const list = await api('/api/songs/hot?limit=10');
+            document.getElementById('hot').innerHTML = list.map((s, i) =>
+                '<div class="list-item" onclick=\'Player.play(' + JSON.stringify(s).replace(/'/g, "&apos;") + ')\'>' +
+                '<div class="idx' + (i < 3 ? ' top' : '') + '">' + (i + 1) + '</div>' +
+                '<div class="grow"><div>' + escapeHtml(s.title) + '</div>' +
+                '<div class="small muted">' + escapeHtml(s.singer) + '</div></div>' +
+                '<div class="small muted">▶ ' + fmtCount(s.playCount) + '</div></div>'
+            ).join('');
+        } catch (e) { /* ignore */ }
+    }
+
+    loadPage();
+    loadHot();
+</script>
+</body>
+</html>

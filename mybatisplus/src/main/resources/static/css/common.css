@@ -1,0 +1,259 @@
+/* ============ 公共样式：登录页 / 卖场页 / 后台页 共用 ============ */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    background: #f4f6f9;
+    color: #333;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ---------- 顶部导航 ---------- */
+.navbar {
+    background: linear-gradient(90deg, #1f6feb, #21a179);
+    color: #fff;
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+}
+
+.navbar .logo {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.navbar .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 14px;
+}
+
+.navbar .btn-link {
+    background: rgba(255, 255, 255, .18);
+    border: 1px solid rgba(255, 255, 255, .5);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 16px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.navbar .btn-link:hover {
+    background: rgba(255, 255, 255, .32);
+}
+
+.container {
+    max-width: 1180px;
+    margin: 24px auto;
+    padding: 0 16px;
+}
+
+/* ---------- 卡片 / 面板 ---------- */
+.panel {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+}
+
+.panel-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    padding-left: 10px;
+    border-left: 4px solid #1f6feb;
+}
+
+/* ---------- 表单控件 ---------- */
+.form-item {
+    margin-bottom: 14px;
+}
+
+.form-item label {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid #d5d9e0;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #1f6feb;
+}
+
+.inline {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.inline .form-item {
+    margin-bottom: 0;
+}
+
+.inline input, .inline select {
+    min-width: 150px;
+}
+
+/* ---------- 按钮 ---------- */
+.btn {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 6px;
+    background: #1f6feb;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn:hover {
+    opacity: .88;
+}
+
+.btn.green {
+    background: #21a179;
+}
+
+.btn.gray {
+    background: #8a94a6;
+}
+
+.btn.red {
+    background: #e5533d;
+}
+
+.btn.small {
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+/* ---------- 表格 ---------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+th, td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #eef0f4;
+    text-align: left;
+    vertical-align: middle;
+}
+
+th {
+    background: #f7f9fc;
+    color: #555;
+    font-weight: 600;
+}
+
+tr:hover td {
+    background: #fafbfd;
+}
+
+/* ---------- 标签 ---------- */
+.tag {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+.tag.green { background: #e4f6ee; color: #1a7f5a; }
+.tag.blue  { background: #e7efff; color: #1f5fd0; }
+.tag.gray  { background: #eef0f4; color: #7a8496; }
+.tag.orange{ background: #fff2e2; color: #c1741a; }
+.tag.red   { background: #fdeceb; color: #c0392b; }
+
+/* ---------- 弹窗 ---------- */
+.modal-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 99;
+}
+
+.modal-mask.show {
+    display: flex;
+}
+
+.modal {
+    background: #fff;
+    border-radius: 10px;
+    width: 460px;
+    max-width: 92vw;
+    padding: 22px;
+    max-height: 88vh;
+    overflow: auto;
+}
+
+.modal h3 {
+    margin-bottom: 16px;
+    font-size: 17px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+/* ---------- 分页 ---------- */
+.pager {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    font-size: 13px;
+    color: #666;
+}
+
+/* ---------- 提示 ---------- */
+.toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, .82);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    z-index: 200;
+    display: none;
+}
+
+.empty {
+    text-align: center;
+    color: #9aa3b2;
+    padding: 40px 0;
+    font-size: 14px;
+}

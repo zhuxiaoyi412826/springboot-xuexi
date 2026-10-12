@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>搜索 - 在线听歌</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="page-title">搜索</div>
+    <div class="row">
+        <input id="q" style="flex:1;min-width:240px" placeholder="输入歌名或歌手，如：周杰伦">
+        <button onclick="doSearch()">搜索</button>
+    </div>
+    <div class="row small muted" style="margin-top:8px">
+        <span>搜索历史（List，只保留 10 条）：</span>
+        <span id="history"></span>
+        <a href="javascript:clearHistory()" class="small">清空</a>
+    </div>
+    <div class="grid grid-songs" id="result" style="margin-top:16px"></div>
+</div>
+<script src="/js/common.js"></script>
+<script>
+    renderNav('search');
+
+    async function doSearch() {
+        const q = document.getElementById('q').value.trim();
+        if (!q) return;
+        try {
+            const list = await api('/api/search?q=' + encodeURIComponent(q) + '&limit=20');
+            document.getElementById('result').innerHTML = list.length ?
+                list.map(songCardHtml).join('') : '<div class="muted">没有找到相关歌曲</div>';
+            loadHistory();
+        } catch (e) { toast(e.message, true); }
+    }
+
+    async function loadHistory() {
+        try {
+            const list = await api('/api/search/history');
+            document.getElementById('history').innerHTML = list.map(h =>
+                '<a class="badge gray" href="javascript:void(0)" onclick="document.getElementById(\'q\').value=\'' + h + '\';doSearch()">' + escapeHtml(h) + '</a>'
+            ).join(' ');
+        } catch (e) { /* ignore */ }
+    }
+
+    async function clearHistory() {
+        await api('/api/search/history', { method: 'DELETE' });
+        loadHistory();
+    }
+
+    document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+    const preset = new URLSearchParams(location.search).get('q');
+    if (preset) { document.getElementById('q').value = preset; doSearch(); }
+    loadHistory();
+</script>
+</body>
+</html>

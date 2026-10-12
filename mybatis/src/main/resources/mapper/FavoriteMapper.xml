@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    收藏 Mapper XML
+
+    重点：多表 JOIN（收藏 -> 小说 -> 分类，再 LEFT JOIN 阅读历史取进度）
+-->
+<mapper namespace="org.example.mybatis.mapper.FavoriteMapper">
+
+    <resultMap id="FavoriteVOMap" type="org.example.mybatis.dto.FavoriteVO">
+        <id column="id" property="id"/>
+        <result column="novel_id" property="novelId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="title" property="title"/>
+        <result column="author" property="author"/>
+        <result column="cover_url" property="coverUrl"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="tags" property="tags" typeHandler="org.example.mybatis.type.TagsTypeHandler"/>
+        <result column="status" property="status"/>
+        <result column="word_count" property="wordCount"/>
+        <result column="chapter_count" property="chapterCount"/>
+        <result column="progress" property="progress"/>
+        <result column="last_chapter_no" property="lastChapterNo"/>
+    </resultMap>
+
+    <select id="selectMyFavorites" resultMap="FavoriteVOMap">
+        SELECT
+            f.id, f.novel_id, f.create_time,
+            n.title, n.author, n.cover_url, n.status, n.word_count, n.chapter_count, n.tags,
+            c.name AS category_name,
+            IFNULL(h.progress, 0) AS progress,
+            h.chapter_no AS last_chapter_no
+        FROM favorite f
+        JOIN novel n ON n.id = f.novel_id AND n.deleted = 0
+        LEFT JOIN category c ON c.id = n.category_id
+        LEFT JOIN reading_history h ON h.novel_id = f.novel_id AND h.user_id = f.user_id
+        WHERE f.user_id = #{userId}
+        ORDER BY f.create_time DESC
+    </select>
+
+    <!-- 批量判断：这批小说里哪些被我收藏了（foreach 构造 IN） -->
+    <select id="selectFavoritedNovelIds" resultType="long">
+        SELECT novel_id FROM favorite
+        WHERE user_id = #{userId}
+          AND novel_id IN
+        <foreach collection="novelIds" item="nid" open="(" separator="," close=")">
+            #{nid}
+        </foreach>
+    </select>
+
+</mapper>

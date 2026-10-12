@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    用户 Mapper XML
+
+    重点：
+      1. <where>/<if>/<choose> 多条件动态查询 + 动态排序
+      2. <foreach> 批量操作（批量禁用、批量查询）
+      3. DATE_FORMAT 日期函数
+-->
+<mapper namespace="org.example.mybatis.mapper.UserMapper">
+
+    <sql id="UserColumns">
+        id, username, password, nickname, avatar, role, status, create_time, update_time, deleted
+    </sql>
+
+    <select id="selectByCondition" resultType="org.example.mybatis.entity.User">
+        SELECT
+            <include refid="UserColumns"/>,
+            <!-- 日期函数演示：把 create_time 格式化成字符串一并返回 -->
+            DATE_FORMAT(create_time, '%Y-%m-%d %H:%i') AS create_time_str
+        FROM sys_user
+        <where>
+            AND deleted = 0
+            <if test="keyword != null and keyword != ''">
+                AND (username LIKE CONCAT('%', #{keyword}, '%')
+                  OR nickname LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="role != null and role != ''">
+                AND role = #{role}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy == 'username'">ORDER BY username ASC</when>
+            <when test="orderBy == 'oldest'">ORDER BY id ASC</when>
+            <otherwise>ORDER BY id DESC</otherwise>
+        </choose>
+    </select>
+
+    <update id="batchLogicDelete">
+        UPDATE sys_user SET deleted = 1
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectByIds" resultType="org.example.mybatis.entity.User">
+        SELECT <include refid="UserColumns"/>
+        FROM sys_user
+        WHERE deleted = 0 AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper>

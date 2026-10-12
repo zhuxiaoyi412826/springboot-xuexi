@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>登录 - 在线听歌</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="login-wrap">
+    <div class="login-box">
+        <h1>🎵 在线听歌</h1>
+        <div class="muted small">用户端与管理端共用登录页，登录后按角色自动跳转</div>
+
+        <div class="field">
+            <label class="small muted">用户名</label>
+            <input id="username" placeholder="admin / zhangsan" value="admin">
+        </div>
+        <div class="field">
+            <label class="small muted">密码</label>
+            <input id="password" type="password" placeholder="密码" value="admin123">
+        </div>
+        <button onclick="doLogin()">登 录</button>
+        <button class="ghost" onclick="toggleRegister()">还没有账号？注册一个</button>
+
+        <div id="register-box" class="hidden">
+            <div class="field">
+                <label class="small muted">昵称（可选）</label>
+                <input id="nickname" placeholder="你的昵称">
+            </div>
+            <button class="ghost" onclick="doRegister()">注 册</button>
+        </div>
+
+        <div class="login-tip">
+            演示账号：<br>
+            管理员：<b>admin / admin123</b>（进入管理后台）<br>
+            普通用户：<b>zhangsan / 123456</b>、<b>lisi / 123456</b><br>
+            登录态由 Sa-Token 存在 Redis 里，重启应用也不会掉线。
+        </div>
+    </div>
+</div>
+<script src="/js/common.js"></script>
+<script src="/js/login.js"></script>
+</body>
+</html>

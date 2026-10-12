@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的下载 - 小说阅读器</title>
+    <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+<div class="topbar"><div class="inner"></div></div>
+
+<div class="container" style="padding:20px 16px">
+    <div class="panel" style="margin-bottom:16px">
+        <div class="inline">
+            <div class="form-item"><label>状态</label><select id="dStatus">
+                <option value="">全部</option>
+                <option value="DOWNLOADING">下载中</option>
+                <option value="PAUSED">已暂停</option>
+                <option value="QUEUED">排队中</option>
+                <option value="COMPLETED">已完成</option>
+                <option value="CANCELLED">已停止</option>
+                <option value="FAILED">失败</option>
+            </select></div>
+            <div class="form-item"><label>关键字</label><input id="dKeyword" placeholder="书名 / 任务号"></div>
+            <button class="btn" onclick="loadTasks(1)">查询</button>
+            <button class="btn blue" onclick="loadTasks(currentPage)">刷新进度</button>
+            <button class="btn red" onclick="cancelAll()">全部停止</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">
+            下载任务
+            <span class="tag blue" id="taskCount">0</span>
+            <span style="font-weight:400;font-size:12px;color:#999;margin-left:8px">
+                任务在后台按章节推进，页面每 1.2 秒自动刷新进度
+            </span>
+        </div>
+        <table>
+            <thead><tr><th>任务号</th><th>书名</th><th>作者</th><th>状态</th><th>进度</th><th>章节</th><th>大小</th><th>开始时间</th><th>操作</th></tr></thead>
+            <tbody id="taskTable"></tbody>
+        </table>
+        <div class="empty" id="taskEmpty" style="display:none">还没有下载任务，去书城挑一本吧</div>
+        <div class="pager" id="taskPager"></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+        <div class="panel-title">我的书架（阅读历史）</div>
+        <table>
+            <thead><tr><th>书名</th><th>分类</th><th>读到</th><th>进度</th><th>最后阅读</th><th>操作</th></tr></thead>
+            <tbody id="historyTable"></tbody>
+        </table>
+        <div class="empty" id="historyEmpty" style="display:none">书架还是空的</div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+    let currentPage = 1;
+    let refreshTimer = null;
+
+    async function loadTasks(page = 1) {
+        currentPage = page;
+        const p = new URLSearchParams({ pageNum: page, pageSize: 10 });
+        const st = document.getElementById('dStatus').value;
+        const kw = document.getElementById('dKeyword').value.trim();
+        if (st) p.set('status', st);
+        if (kw) p.set('keyword', kw);
+
+        const data = await get('/api/downloads?' + p.toString());
+        if (!data) return;
+        document.getElementById('taskCount').textContent = data.total + ' 个任务';
+
+        document.getElementById('taskTable').innerHTML = data.list.map(t => `
+            <tr>
+                <td style="font-size:12px;color:#999">${escapeHtml(t.taskNo)}</td>
+                <td><b>${escapeHtml(t.title)}</b></td>
+                <td>${escapeHtml(t.author || '-')}</td>
+                <td><span class="tag ${statusTag(t.status)}">${statusText(t.status)}</span></td>
+                <td style="min-width:130px">
+                    <div class="progress"><i style="width:${t.percent}%"></i></div>
+                    <span style="font-size:12px;color:#999">${t.percent}%</span>
+                </td>
+                <td>${t.doneChapter}/${t.totalChapter}</td>
+                <td>${formatSize(t.fileSize)}</td>
+                <td>${formatTime(t.startTime)}</td>
+                <td style="white-space:nowrap">
+                    ${t.status === 'DOWNLOADING' ? `<button class="btn small gray" onclick="pauseTask(${t.id})">暂停</button>` : ''}
+                    ${t.status === 'PAUSED' ? `<button class="btn small green" onclick="resumeTask(${t.id})">继续</button>` : ''}
+                    ${['QUEUED', 'DOWNLOADING', 'PAUSED'].includes(t.status)
+                        ? `<button class="btn small red" onclick="cancelTask(${t.id})">停止</button>` : ''}
+                    ${['COMPLETED', 'CANCELLED', 'FAILED'].includes(t.status)
+                        ? `<button class="btn small blue" onclick="restartTask(${t.id})">重新下载</button>` : ''}
+                    ${t.status === 'FAILED' && t.errorMsg ? `<span style="color:#dc3545;font-size:12px">${escapeHtml(t.errorMsg)}</span>` : ''}
+                </td>
+            </tr>`).join('');
+
+        document.getElementById('taskEmpty').style.display = data.list.length ? 'none' : 'block';
+        renderPager(document.getElementById('taskPager'), data, loadTasks);
+
+        // 有进行中的任务就自动刷新
+        const running = data.list.some(t => t.status === 'DOWNLOADING');
+        clearTimeout(refreshTimer);
+        if (running) refreshTimer = setTimeout(() => loadTasks(page), 1200);
+    }
+
+    async function loadHistory() {
+        const data = await get('/api/history?pageNum=1&pageSize=20');
+        if (!data) return;
+        document.getElementById('historyTable').innerHTML = data.list.map(h => `
+            <tr>
+                <td><b>${escapeHtml(h.title)}</b></td>
+                <td>${escapeHtml(h.categoryName || '-')}</td>
+                <td>${escapeHtml(h.chapterTitle || '第' + h.chapterNo + '章')}</td>
+                <td style="min-width:110px">
+                    <div class="progress"><i style="width:${h.progress || 0}%"></i></div>
+                    <span style="font-size:12px;color:#999">${h.progress || 0}%</span>
+                </td>
+                <td>${formatTime(h.lastReadTime)}</td>
+                <td style="white-space:nowrap">
+                    <a class="btn small green" href="reader.html?novelId=${h.novelId}">继续阅读</a>
+                    <button class="btn small gray" onclick="removeHistory(${h.novelId})">移出</button>
+                </td>
+            </tr>`).join('');
+        document.getElementById('historyEmpty').style.display = data.list.length ? 'none' : 'block';
+    }
+
+    async function pauseTask(id) { await putForm(`/api/downloads/${id}/pause`); await loadTasks(currentPage); }
+    async function resumeTask(id) { await putForm(`/api/downloads/${id}/resume`); await loadTasks(currentPage); }
+    async function cancelTask(id) { await putForm(`/api/downloads/${id}/cancel`); await loadTasks(currentPage); }
+    async function restartTask(id) { await post(`/api/downloads/${id}/restart`, {}); await loadTasks(1); }
+
+    async function cancelAll() {
+        if (!confirm('确定停止所有进行中的下载任务？')) return;
+        await putForm('/api/downloads/cancel-all');
+        await loadTasks(1);
+    }
+
+    async function removeHistory(novelId) {
+        await del(`/api/history/${novelId}`);
+        await loadHistory();
+    }
+
+    (async () => {
+        const u = await requireLogin();
+        if (!u) return;
+        renderTopbar('downloads');
+        await loadTasks(1);
+        await loadHistory();
+    })();
+</script>
+</body>
+</html>

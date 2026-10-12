@@ -1,0 +1,75 @@
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    background: #f5f6f8;
+    color: #333;
+    font-size: 14px;
+}
+.topbar {
+    background: #2c3e50;
+    color: #fff;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+.topbar .logo { font-size: 18px; font-weight: bold; }
+.topbar .logo small { font-size: 12px; font-weight: normal; opacity: .7; margin-left: 8px; }
+.topbar a { color: #cfd8dc; text-decoration: none; }
+.topbar a:hover { color: #fff; }
+.container { max-width: 1100px; margin: 0 auto; padding: 18px 16px 40px; }
+h1 { font-size: 20px; margin: 4px 0 14px; }
+h2 { font-size: 16px; margin: 20px 0 10px; border-left: 4px solid #3498db; padding-left: 8px; }
+.panel {
+    background: #fff;
+    border: 1px solid #e6e8eb;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.card {
+    border: 1px solid #e6e8eb;
+    border-radius: 6px;
+    padding: 12px 14px;
+    background: #fff;
+}
+.card a { color: #2980b9; text-decoration: none; font-weight: bold; }
+.card p { margin: 6px 0 0; color: #666; font-size: 13px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+label { min-width: 90px; color: #555; }
+input[type=text], input[type=number], select {
+    padding: 6px 8px;
+    border: 1px solid #ccd0d5;
+    border-radius: 4px;
+    min-width: 160px;
+}
+button, .btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 4px;
+    background: #3498db;
+    color: #fff;
+    cursor: pointer;
+}
+button:hover { background: #2980b9; }
+button.gray { background: #95a5a6; }
+button.green { background: #27ae60; }
+button.orange { background: #e67e22; }
+pre#out {
+    background: #1e272e;
+    color: #d2dae2;
+    padding: 12px;
+    border-radius: 6px;
+    min-height: 120px;
+    max-height: 460px;
+    overflow: auto;
+    white-space: pre-wrap;
+    font-size: 13px;
+}
+.tip { background: #fff8e1; border-left: 4px solid #f39c12; padding: 8px 12px; margin: 10px 0; font-size: 13px; }
+code { background: #eef1f4; padding: 1px 5px; border-radius: 3px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { border: 1px solid #e6e8eb; padding: 6px 8px; text-align: left; }
+th { background: #f0f3f6; }

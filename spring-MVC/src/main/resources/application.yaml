@@ -1,0 +1,23 @@
+server:
+  port: 8083
+  error:
+    include-message: always
+    include-stacktrace: never
+
+spring:
+  application:
+    name: spring-mvc-lab
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+# 自定义配置：文件上传目录
+mvc:
+  upload-dir: ./uploads
+  async-timeout: 8000
+
+logging:
+  level:
+    org.example.mvc: DEBUG
+    org.springframework.web.servlet: INFO

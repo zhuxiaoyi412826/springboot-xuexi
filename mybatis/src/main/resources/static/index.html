@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>书城 - 小说阅读器</title>
+    <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+<div class="topbar"><div class="inner"></div></div>
+
+<div class="container" style="padding:20px 16px">
+
+    <!-- 搜索区 -->
+    <div class="panel" style="margin-bottom:18px">
+        <div class="inline">
+            <div class="form-item">
+                <label>关键字</label>
+                <input id="keyword" placeholder="书名 / 作者 / 简介">
+            </div>
+            <div class="form-item">
+                <label>分类</label>
+                <select id="categoryId"><option value="">全部</option></select>
+            </div>
+            <div class="form-item">
+                <label>状态</label>
+                <select id="status">
+                    <option value="">全部</option>
+                    <option value="SERIALIZING">连载中</option>
+                    <option value="FINISHED">已完结</option>
+                </select>
+            </div>
+            <div class="form-item">
+                <label>排序</label>
+                <select id="orderBy">
+                    <option value="hot">综合热门</option>
+                    <option value="views">浏览最多</option>
+                    <option value="favorite">收藏最多</option>
+                    <option value="download">下载最多</option>
+                    <option value="word">字数最多</option>
+                    <option value="new">最新上架</option>
+                </select>
+            </div>
+            <button class="btn" onclick="loadNovels(1)">搜索</button>
+            <button class="btn gray" onclick="resetSearch()">重置</button>
+        </div>
+    </div>
+
+    <!-- 小说列表 -->
+    <div class="panel">
+        <div class="panel-title">
+            全部作品
+            <span id="totalTag" class="tag blue">0 本</span>
+        </div>
+        <div class="grid" id="novelGrid"></div>
+        <div class="empty" id="novelEmpty" style="display:none">没有找到符合条件的小说</div>
+        <div class="pager" id="novelPager"></div>
+    </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-mask" id="detailMask">
+    <div class="modal">
+        <h3>书籍详情</h3>
+        <div id="detailBody"></div>
+        <div class="modal-footer">
+            <button class="btn gray" onclick="document.getElementById('detailMask').classList.remove('show')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+    let currentNovel = null;
+
+    // 加载分类下拉
+    async function loadCategories() {
+        const list = await get('/api/categories');
+        document.getElementById('categoryId').innerHTML =
+            '<option value="">全部</option>' +
+            (list || []).map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    }
+
+    function buildQuery() {
+        const p = new URLSearchParams();
+        const kw = document.getElementById('keyword').value.trim();
+        const cid = document.getElementById('categoryId').value;
+        const st = document.getElementById('status').value;
+        const ob = document.getElementById('orderBy').value;
+        if (kw) p.set('keyword', kw);
+        if (cid) p.set('categoryId', cid);
+        if (st) p.set('status', st);
+        if (ob) p.set('orderBy', ob);
+        return p.toString();
+    }
+
+    async function loadNovels(page = 1) {
+        const data = await get(`/api/novels?pageNum=${page}&pageSize=12&${buildQuery()}`);
+        if (!data) return;
+        document.getElementById('totalTag').textContent = data.total + ' 本';
+
+        const grid = document.getElementById('novelGrid');
+        grid.innerHTML = data.list.map(n => `
+            <div class="card" onclick="openDetail(${n.id})">
+                <div class="thumb">
+                    ${n.coverUrl ? `<img src="${escapeHtml(n.coverUrl)}" alt="">` : '📖'}
+                    <span class="badge">${statusText(n.status)}</span>
+                </div>
+                <div class="body">
+                    <div class="name">${escapeHtml(n.title)}</div>
+                    <div class="meta">${escapeHtml(n.author || '佚名')} · ${escapeHtml(n.categoryName || '未分类')}</div>
+                    <div class="desc">${escapeHtml(n.description || '暂无简介')}</div>
+                    <div class="foot">
+                        <span style="color:#bbb;font-size:12px">${formatNumber(n.wordCount)}字 · ${n.chapterCount}章</span>
+                        ${n.favorited ? '<span class="tag orange">已收藏</span>' : ''}
+                    </div>
+                </div>
+            </div>`).join('');
+
+        document.getElementById('novelEmpty').style.display = data.list.length ? 'none' : 'block';
+        renderPager(document.getElementById('novelPager'), data, loadNovels);
+    }
+
+    function resetSearch() {
+        document.getElementById('keyword').value = '';
+        document.getElementById('categoryId').value = '';
+        document.getElementById('status').value = '';
+        document.getElementById('orderBy').value = 'hot';
+        safe(() => loadNovels(1));
+    }
+
+    // 详情
+    async function openDetail(id) {
+        const d = await get(`/api/novels/${id}`);
+        if (!d) return;
+        currentNovel = d;
+        const fav = d.favorited ? '<span class="tag orange">已收藏</span>' : '';
+        document.getElementById('detailBody').innerHTML = `
+            <div class="detail-head">
+                <div class="cover">${d.coverUrl ? `<img src="${escapeHtml(d.coverUrl)}">` : '📖'}</div>
+                <div class="detail-info">
+                    <h2>${escapeHtml(d.title)} ${fav}</h2>
+                    <p>作者：${escapeHtml(d.author || '佚名')} ｜ 分类：${escapeHtml(d.categoryName || '未分类')}</p>
+                    <p><span class="tag ${statusTag(d.status)}">${statusText(d.status)}</span>
+                       ${(d.tags || []).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join(' ')}</p>
+                    <p>${d.chapterCount} 章 ｜ ${formatNumber(d.wordCount)} 字 ｜ 👁 ${formatNumber(d.viewCount)} ｜ ★ ${d.favoriteCount} ｜ ⬇ ${formatNumber(d.downloadCount)}</p>
+                    ${d.myChapterNo ? `<p style="color:#8b5a2b">读到第 ${d.myChapterNo} 章（${d.myProgress}%）</p>` : ''}
+                </div>
+            </div>
+            <div class="detail-desc">${escapeHtml(d.description || '暂无简介')}</div>
+            <div class="modal-footer" style="justify-content:flex-start;margin-top:16px">
+                ${d.firstChapterId
+                    ? `<a class="btn green" href="reader.html?novelId=${d.id}&chapterId=${d.firstChapterId}">${d.myChapterNo ? '继续阅读' : '开始阅读'}</a>`
+                    : '<button class="btn gray" disabled>暂无章节</button>'}
+                <button class="btn ${d.favorited ? 'gray' : 'orange'}" onclick="toggleFav(${d.id})">${d.favorited ? '取消收藏' : '收藏'}</button>
+                <button class="btn blue" onclick="download(${d.id})">下载全本</button>
+            </div>`;
+        document.getElementById('detailMask').classList.add('show');
+    }
+
+    async function toggleFav(novelId) {
+        await post(`/api/favorites/toggle/${novelId}`, {});
+        await openDetail(novelId);
+        await loadNovels();
+    }
+
+    async function download(novelId) {
+        const t = await post(`/api/downloads/create/${novelId}`, {});
+        if (t) toast('已加入下载队列，可在「我的下载」查看进度');
+    }
+
+    document.getElementById('detailMask').onclick = e => {
+        if (e.target.id === 'detailMask') e.target.classList.remove('show');
+    };
+
+    (async () => {
+        const u = await requireLogin();
+        if (!u) return;
+        renderTopbar('index');
+        await loadCategories();
+        await loadNovels(1);
+    })();
+</script>
+</body>
+</html>

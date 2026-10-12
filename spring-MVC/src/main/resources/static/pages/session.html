@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>⑧ 会话与 Cookie</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>会话 / Cookie / Flash</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>⑧ HttpSession / Cookie / FlashMap / @SessionAttributes</h1>
+
+    <div class="panel">
+        <h2>登录（写入 Session）</h2>
+        <div class="row">
+            <label>用户名</label><input id="username" type="text" value="zhangsan">
+            <button class="green" onclick="login()">登录（POST 表单 → redirect + Flash 属性）</button>
+            <button onclick="get('/mvc/session/me')">查看登录信息（含 Flash 消息）</button>
+            <button class="gray" onclick="location.href='/mvc/session/logout'">退出登录</button>
+        </div>
+        <div class="tip">登录后再访问 <code>/mvc/secure/profile</code> 才能通过 LoginInterceptor。</div>
+    </div>
+
+    <div class="panel">
+        <h2>受保护资源（LoginInterceptor）</h2>
+        <div class="row">
+            <button onclick="get('/mvc/secure/profile')">/mvc/secure/profile（未登录 → 401 JSON）</button>
+            <button onclick="get('/mvc/secure/public')">/mvc/secure/public（被 exclude 放行）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>Cookie</h2>
+        <div class="row">
+            <button onclick="get('/mvc/session/cookie/set')">设置 Cookie sid</button>
+            <button onclick="get('/mvc/session/cookie/read')">@CookieValue 读取</button>
+            <button onclick="get('/mvc/session/cookie/delete')">删除 Cookie（maxAge=0）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>@SessionAttributes（多步向导）</h2>
+        <div class="row">
+            <button onclick="get('/mvc/wizard/step?key=name&value=张三')">step1 存 name</button>
+            <button onclick="get('/mvc/wizard/step?key=age&value=20')">step2 存 age</button>
+            <button onclick="get('/mvc/session/attr')">@RequestAttribute 读取 requestId</button>
+        </div>
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+<script>
+    /** 用表单编码提交（模拟 <form> 提交），服务端 redirect 后由浏览器跳转 */
+    function login() {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/mvc/session/login';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'username';
+        input.value = $v('username');
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+第一批：强烈推荐（每个都能学到核心特性）
+#	功能	对应 MyBatis-Plus 知识点	成本
+1	乐观锁：商品表加 version，并发改价/改库存时检测冲突	@Version + OptimisticLockerInnerInterceptor，和刚做的悲观锁形成对照	低
+2	自动填充：create_time / update_time / 操作人不再手写 set	@TableField(fill = FieldFill.INSERT_UPDATE) + MetaObjectHandler	低
+3	枚举处理器：订单状态、商品状态从 String 改成枚举	@EnumValue + IEnum，配合 mybatis-plus.configuration.default-enum-type-handler	低
+4	阻断全表更新：误操作 update() 不带 where 时直接报错	BlockAttackInnerInterceptor，一行配置	极低
+5	批量插入：批量上架商品	saveBatch() + InsertBatchSomeColumn 自定义 SQL 注入器	中
+第 1 个最值得做——悲观锁你已经有了，加上乐观锁就能完整对比两种并发控制的差异，这是面试高频题。
+
+第二批：进阶特性
+#	功能	知识点
+6	商品多张图片、规格参数存 JSON 列	自定义 TypeHandler / JacksonTypeHandler
+7	普通用户只能看自己的数据（管理员看全部）	DataPermissionInterceptor 数据权限
+8	订单按月分表 t_order_202601	DynamicTableNameInnerInterceptor 动态表名
+9	读写分离 / 多库	dynamic-datasource（你本地仓库里已有 dynamic-datasource-spring-4.3.1）
+10	自定义全局方法，如 insertIgnore、upsert	AbstractMethod + DefaultSqlInjector
+第三批：工程化 / 周边
+#	功能	知识点
+11	一键生成 entity/mapper/service/controller	FastAutoGenerator 代码生成器
+12	逻辑删除的数据恢复（回收站）	逻辑删除 + 自定义 SQL 绕过拦截器
+13	商品详情缓存	MyBatis 二级缓存
+14	实体直接 .insert() / .selectById()	ActiveRecord 模式（extends Model<T>）
+15	慢 SQL 定位	IllegalSQLInnerInterceptor / 性能分析工具   慢SQL日志拦截器
+
+购物车 订单管理  点击购买进入订单页面 进入到支付流程
+接入对象存储本地和远程

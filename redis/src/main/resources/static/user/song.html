@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>歌曲详情 - 在线听歌</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="card row" id="song-box" style="align-items:flex-start"></div>
+
+    <div class="section-title">评论 <span class="small muted">限流（Lua 令牌桶）+ 幂等 + Redis 分布式 ID</span></div>
+    <div class="card">
+        <textarea id="comment-input" rows="2" style="width:100%" placeholder="说点什么…"></textarea>
+        <div class="row" style="justify-content:flex-end;margin-top:8px">
+            <button onclick="addComment()">发表评论</button>
+        </div>
+    </div>
+    <div class="card" id="comments" style="margin-top:12px"></div>
+</div>
+<script src="/js/common.js"></script>
+<script>
+    renderNav('index');
+    const songId = new URLSearchParams(location.search).get('id');
+    let idempotentKey = null;
+
+    async function loadSong() {
+        if (!songId) { toast('缺少歌曲 id', true); return; }
+        try {
+            const data = await api('/api/songs/' + songId);
+            const s = data.song;
+            document.title = s.title + ' - 在线听歌';
+            document.getElementById('song-box').innerHTML =
+                '<img src="' + (s.coverUrl || '') + '" style="width:180px;border-radius:10px" onerror="this.style.display=\'none\'">' +
+                '<div style="flex:1">' +
+                '<div style="font-size:22px;font-weight:700">' + escapeHtml(s.title) + '</div>' +
+                '<div class="muted">' + escapeHtml(s.singer) + ' · ' + escapeHtml(s.album || '') + ' · ' + escapeHtml(s.category || '') + '</div>' +
+                '<div class="small muted" style="margin-top:6px">▶ ' + fmtCount(s.playCount) + ' 播放 · ♡ ' + fmtCount(s.likeCount) + ' · 时长 ' + fmtDuration(s.duration) + '</div>' +
+                '<div class="row" style="margin-top:12px">' +
+                '<button onclick="play()">▶ 播放</button>' +
+                '<button class="ghost" onclick="likeSong()">' + (s.liked ? '♥ 已点赞' : '♡ 点赞') + '</button>' +
+                '<button class="ghost" onclick="favSong()">' + (s.favorited ? '★ 已收藏' : '☆ 收藏') + '</button>' +
+                '</div>' +
+                '<pre class="json" style="margin-top:12px">' + escapeHtml(s.lyric || '（暂无歌词）') + '</pre>' +
+                '</div>';
+        } catch (e) { toast(e.message, true); }
+    }
+
+    function play() {
+        api('/api/songs/' + songId).then(d => Player.play(d.song));
+    }
+    async function likeSong() {
+        const d = await api('/api/songs/' + songId + '/like', { method: 'POST' });
+        toast(d.liked ? '已点赞' : '已取消');
+        loadSong();
+    }
+    async function favSong() {
+        const d = await api('/api/songs/' + songId + '/favorite', { method: 'POST' });
+        toast(d.favorited ? '已收藏' : '已取消');
+        loadSong();
+    }
+
+    async function loadComments() {
+        try {
+            const list = await api('/api/comments/list?songId=' + songId);
+            document.getElementById('comments').innerHTML = list.length ? list.map(c =>
+                '<div class="list-item">' +
+                '<div class="grow"><div><b>' + escapeHtml(c.nickname) + '</b> <span class="small muted">' + (c.createTime || '').replace('T', ' ') + '</span></div>' +
+                '<div>' + escapeHtml(c.content) + '</div></div>' +
+                '<button class="ghost tiny" onclick="likeComment(' + c.id + ')">♡ ' + (c.likeCount || 0) + '</button>' +
+                '</div>').join('') : '<div class="muted small">还没有评论，来抢沙发～</div>';
+        } catch (e) { /* ignore */ }
+    }
+
+    async function addComment() {
+        const content = document.getElementById('comment-input').value.trim();
+        if (!content) { toast('请输入评论内容', true); return; }
+        // 幂等 key：同一条内容用同一个 key，重复点击会被拦住（刷新页面后重新生成）
+        if (!idempotentKey) idempotentKey = 'c' + Date.now();
+        try {
+            await api('/api/comments/add', {
+                method: 'POST',
+                body: JSON.stringify({ songId: Number(songId), content, idempotentKey })
+            });
+            document.getElementById('comment-input').value = '';
+            idempotentKey = null;
+            toast('评论成功');
+            loadComments();
+        } catch (e) { toast(e.message, true); }
+    }
+
+    async function likeComment(id) {
+        await api('/api/comments/' + id + '/like', { method: 'POST' });
+        loadComments();
+    }
+
+    loadSong();
+    loadComments();
+</script>
+</body>
+</html>

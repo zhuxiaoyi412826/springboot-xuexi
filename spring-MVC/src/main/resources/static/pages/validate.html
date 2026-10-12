@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>④ 数据校验</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>数据校验</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>④ 数据校验</h1>
+
+    <div class="panel">
+        <h2>@Valid + @RequestBody（失败抛异常 → 全局异常处理）</h2>
+        <div class="row">
+            <button class="green" onclick="post('/mvc/validate/body', {username:'zhangsan', age:20, phone:'13800138000'})">合法数据</button>
+            <button class="orange" onclick="post('/mvc/validate/body', {username:'z', age:200, phone:'123'})">非法数据（看 400 + 字段错误）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>@Valid + BindingResult（自己处理错误，不抛异常）</h2>
+        <div class="row">
+            <button onclick="get('/mvc/validate/form?username=zs&age=20')">合法</button>
+            <button onclick="get('/mvc/validate/form?username=z&age=200')">非法</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>校验分组 @Validated(Create/Update)</h2>
+        <div class="tip">Create 组不校验 id；Update 组要求 id 必填。</div>
+        <div class="row">
+            <button onclick="post('/mvc/validate/create', {username:'zhangsan', age:20})">Create 组（无 id 也通过）</button>
+            <button onclick="post('/mvc/validate/update', {username:'zhangsan', age:20})">Update 组（缺 id → 报错）</button>
+            <button onclick="post('/mvc/validate/update', {id:1, username:'zhangsan', age:20})">Update 组（带 id）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>Spring 原生 Validator（@InitBinder + setValidator）</h2>
+        <div class="row">
+            <button onclick="get('/mvc/validate/spring-validator?username=zs&age=20')">合法</button>
+            <button onclick="get('/mvc/validate/spring-validator?username=&age=15')">空用户名 + 未成年</button>
+            <button onclick="get('/mvc/validate/spring-validator?username=zs&age=20&nickname=admin001')">昵称含 admin（全局错误）</button>
+        </div>
+    </div>
+
+    <div class="tip">
+        自定义约束：<code>@Phone</code>（注解 + <code>PhoneValidator implements ConstraintValidator</code>），
+        用在 <code>User.phone</code> 字段上。
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+</body>
+</html>

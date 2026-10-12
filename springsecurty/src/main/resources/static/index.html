@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>视频小站 - Spring Security 演示</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <span class="logo">视频小站 <small>Spring Security 学习项目</small></span>
+    <span class="spacer"></span>
+    <a href="user/login.html">登录</a>
+    <a href="user/home.html">先去逛逛</a>
+</div>
+<div class="container">
+    <h1>在线视频浏览网站（Spring Security 全知识点演示）</h1>
+
+    <div class="panel">
+        <h2>两套静态页面</h2>
+        <div class="grid">
+            <div class="card">
+                <div class="cover">用户端</div>
+                <div class="body">
+                    <div class="title"><a href="user/home.html">用户端页面</a></div>
+                    <div class="meta">浏览/搜索/播放视频、点赞收藏、发评论、个人中心。
+                        匿名即可浏览，写操作需要登录。</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="cover c4">管理端</div>
+                <div class="body">
+                    <div class="title"><a href="admin/index.html">管理后台</a></div>
+                    <div class="meta">用户管理、视频审核、评论管理、在线会话强制下线、登录日志。
+                        需要 ROLE_ADMIN（否则跳 403）。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>演示账号（密码均为密文存储）</h2>
+        <table>
+            <tr><th>用户名</th><th>密码</th><th>角色</th><th>说明</th></tr>
+            <tr><td>admin</td><td>admin123</td><td>ROLE_ADMIN / ROLE_USER</td><td>管理员，可进后台、强制下线</td></tr>
+            <tr><td>zhangsan</td><td>123456</td><td>ROLE_USER</td><td>上传了视频（含私有、待审核）</td></tr>
+            <tr><td>lisi</td><td>123456</td><td>ROLE_USER / ROLE_VIP</td><td>VIP，可使用「下载」</td></tr>
+            <tr><td>bob</td><td>123456</td><td>ROLE_USER</td><td>密码用 Argon2 加密</td></tr>
+            <tr><td>carol</td><td>123456</td><td>ROLE_USER</td><td>密码用 PBKDF2 加密</td></tr>
+            <tr><td>locked</td><td>123456</td><td>ROLE_USER</td><td>已禁用账号（演示登录被拒）</td></tr>
+        </table>
+    </div>
+
+    <div class="panel">
+        <h2>知识点体验入口</h2>
+        <table>
+            <tr><th>知识点</th><th>怎么体验</th></tr>
+            <tr><td>表单登录 / 记住我 / 匿名访问</td><td>user/login.html（勾选「记住我」后关闭浏览器再打开仍保持登录）</td></tr>
+            <tr><td>HTTP Basic</td><td><code>curl -u admin:admin123 http://localhost:8084/app/basic/me</code></td></tr>
+            <tr><td>HTTP Digest</td><td><code>curl --digest -u admin:admin123 http://localhost:8084/digest/me</code></td></tr>
+            <tr><td>OAuth2 资源服务器（JWT）</td><td>先 POST /api/auth/token 取令牌，再 <code>-H "Authorization: Bearer xxx" /api/videos</code></td></tr>
+            <tr><td>自定义认证（API Key）</td><td><code>-H "X-API-Key: video-site-api-key-8888" http://localhost:8084/api/ping</code></td></tr>
+            <tr><td>URL 级 / 方法级 / 对象级权限</td><td>用普通账号访问 admin/index.html → 403；删除他人评论 → 403</td></tr>
+            <tr><td>并发登录与强制下线</td><td>两个浏览器登录同一账号（最多 2 个），管理后台「强制下线」</td></tr>
+            <tr><td>CSRF</td><td>不带 X-XSRF-TOKEN 直接 POST /app/comments/add → 403</td></tr>
+        </table>
+    </div>
+</div>
+</body>
+</html>

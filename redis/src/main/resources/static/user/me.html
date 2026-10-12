@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的 - 在线听歌</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="page-title">我的</div>
+
+    <div class="card" id="profile"></div>
+
+    <div class="section-title">签到 <span class="small muted">Bitmap：一个月只要 31 个 bit</span></div>
+    <div class="card">
+        <div class="row">
+            <button onclick="sign()">今日签到</button>
+            <span class="small muted" id="sign-info"></span>
+        </div>
+        <div class="small muted" id="sign-days" style="margin-top:8px"></div>
+    </div>
+
+    <div class="section-title">我的收藏 <span class="small muted">Set</span></div>
+    <div class="card" id="favorites"></div>
+
+    <div class="section-title">最近播放 <span class="small muted">List（只保留最近 20 条）</span></div>
+    <div class="card" id="recent"></div>
+</div>
+<script src="/js/common.js"></script>
+<script>
+    renderNav('me');
+
+    async function loadProfile() {
+        try {
+            const u = await api('/api/me/profile');
+            document.getElementById('profile').innerHTML =
+                '<div><b>' + escapeHtml(u.nickname || u.username) + '</b> ' +
+                '<span class="badge' + (u.role === 'admin' ? '' : ' gray') + '">' + escapeHtml(u.role) + '</span></div>' +
+                '<div class="small muted">用户名：' + escapeHtml(u.username) + ' · 累计签到 ' + (u.signDays || 0) + ' 天</div>';
+        } catch (e) { /* 未登录会自动跳转 */ }
+    }
+
+    async function loadSign() {
+        try {
+            const d = await api('/api/me/sign');
+            document.getElementById('sign-info').innerText =
+                '本月已签到 ' + d.total + ' 天，连续 ' + d.continuous + ' 天';
+            document.getElementById('sign-days').innerText = '签到日期：' + (d.signedDays.join('、') || '无');
+        } catch (e) { /* ignore */ }
+    }
+
+    async function sign() {
+        try {
+            await api('/api/me/sign', { method: 'POST' });
+            toast('签到成功 +1');
+            loadSign();
+        } catch (e) { toast(e.message, true); }
+    }
+
+    async function loadFavorites() {
+        try {
+            const list = await api('/api/songs/favorites');
+            document.getElementById('favorites').innerHTML = list.length ? list.map(s =>
+                '<div class="list-item" onclick=\'Player.play(' + JSON.stringify(s).replace(/'/g, "&apos;") + ')\'>' +
+                '<img src="' + (s.coverUrl || '') + '" onerror="this.style.visibility=\'hidden\'">' +
+                '<div class="grow"><div>' + escapeHtml(s.title) + '</div><div class="small muted">' + escapeHtml(s.singer) + '</div></div>' +
+                '</div>').join('') : '<span class="muted small">还没有收藏</span>';
+        } catch (e) { /* ignore */ }
+    }
+
+    async function loadRecent() {
+        try {
+            const list = await api('/api/songs/recent?limit=10');
+            document.getElementById('recent').innerHTML = list.length ? list.map(s =>
+                '<div class="list-item" onclick=\'Player.play(' + JSON.stringify(s).replace(/'/g, "&apos;") + ')\'>' +
+                '<img src="' + (s.coverUrl || '') + '" onerror="this.style.visibility=\'hidden\'">' +
+                '<div class="grow"><div>' + escapeHtml(s.title) + '</div><div class="small muted">' + escapeHtml(s.singer) + '</div></div>' +
+                '</div>').join('') : '<span class="muted small">还没有播放记录</span>';
+        } catch (e) { /* ignore */ }
+    }
+
+    loadProfile();
+    loadSign();
+    loadFavorites();
+    loadRecent();
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>登录 - 视频小站</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <span class="logo">视频小站 <small>登录</small></span>
+    <span class="spacer"></span>
+    <a href="home.html">先去逛逛</a>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>登录</h1>
+    <div id="msg"></div>
+
+    <div class="panel">
+        <div class="row">
+            <label>用户名</label>
+            <input id="username" type="text" value="admin" autocomplete="username">
+        </div>
+        <div class="row">
+            <label>密码</label>
+            <input id="password" type="password" value="admin123" autocomplete="current-password">
+        </div>
+        <div class="row">
+            <label></label>
+            <label style="min-width:auto"><input id="remember" type="checkbox"> 记住我（14 天）</label>
+        </div>
+        <div class="row">
+            <label></label>
+            <button id="btnLogin">表单登录</button>
+            <span id="oauth2Box"></span>
+            <a href="register.html"><button class="orange" type="button">注册新账号</button></a>
+        </div>
+        <div class="muted">第三方登录按钮由 /app/auth/oauth2-clients 动态渲染：没配置 client-id 时不会出现。</div>
+        <div class="muted">登录请求会带上 CSRF Token（X-XSRF-TOKEN 头），服务端已开启 CSRF 防护。</div>
+    </div>
+
+    <div class="panel">
+        <h2>其它认证方式（命令行体验）</h2>
+        <table>
+            <tr><th>方式</th><th>命令</th></tr>
+            <tr><td>HTTP Basic</td><td><code>curl -i -u admin:admin123 http://localhost:8084/app/basic/me</code></td></tr>
+            <tr><td>HTTP Digest</td><td><code>curl -i --digest -u admin:admin123 http://localhost:8084/digest/me</code></td></tr>
+            <tr><td>OAuth2 资源服务器(JWT)</td>
+                <td><code>curl -X POST http://localhost:8084/api/auth/token -H "Content-Type: application/json"
+                    -d '{"username":"admin","password":"admin123"}'</code></td></tr>
+            <tr><td>自定义 API Key</td>
+                <td><code>curl -i -H "X-API-Key: video-site-api-key-8888" http://localhost:8084/api/ping</code></td></tr>
+        </table>
+    </div>
+
+    <div class="panel">
+        <h2>响应</h2>
+        <pre class="log" id="log"></pre>
+    </div>
+</div>
+<script src="../js/common.js"></script>
+<script src="../js/login.js"></script>
+</body>
+</html>

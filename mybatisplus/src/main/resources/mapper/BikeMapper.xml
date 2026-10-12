@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    方式一：Mapper XML 实现动态 SQL
+    与 BikeMapper 接口中 searchWithXml / statWithXml 两个方法一一对应（id 必须等于方法名）
+-->
+<mapper namespace="org.example.mybatisplus.mapper.BikeMapper">
+
+    <!-- ================== 可复用片段 ================== -->
+
+    <!-- 订单销量子查询：每个 bike_id 的累计销量与销售额（排除已取消订单） -->
+    <sql id="OrderStatSubQuery">
+        LEFT JOIN (
+            SELECT bike_id,
+                   SUM(quantity)     AS sold_count,
+                   SUM(total_amount) AS sales_amount
+            FROM t_order
+            WHERE deleted = 0 AND status &lt;&gt; '已取消'
+            GROUP BY bike_id
+        ) so ON so.bike_id = b.id
+    </sql>
+
+    <!--
+        动态 WHERE 条件（本文件两个查询共用）
+        所有条件都可为空：为空就不拼这段 SQL，做到真正的动态拼接
+    -->
+    <sql id="BikeDynamicWhere">
+        <where>
+            AND b.deleted = 0
+            <if test="q.keyword != null and q.keyword != ''">
+                AND (b.name LIKE CONCAT('%', #{q.keyword}, '%')
+                  OR b.brand LIKE CONCAT('%', #{q.keyword}, '%')
+                  OR b.description LIKE CONCAT('%', #{q.keyword}, '%'))
+            </if>
+            <if test="q.categories != null and q.categories.size() &gt; 0">
+                AND b.category IN
+                <foreach collection="q.categories" item="c" open="(" separator="," close=")">
+                    #{c}
+                </foreach>
+            </if>
+            <if test="q.brands != null and q.brands.size() &gt; 0">
+                AND b.brand IN
+                <foreach collection="q.brands" item="b2" open="(" separator="," close=")">
+                    #{b2}
+                </foreach>
+            </if>
+            <if test="q.minPrice != null">
+                AND b.price &gt;= #{q.minPrice}
+            </if>
+            <if test="q.maxPrice != null">
+                AND b.price &lt;= #{q.maxPrice}
+            </if>
+            <if test="q.minStock != null">
+                AND b.stock &gt;= #{q.minStock}
+            </if>
+            <if test="q.status != null">
+                AND b.status = #{q.status}
+            </if>
+            <if test="q.minSold != null">
+                AND COALESCE(so.sold_count, 0) &gt;= #{q.minSold}
+            </if>
+        </where>
+    </sql>
+
+    <!-- ================== 查询一：分页检索商品 ================== -->
+
+    <select id="searchWithXml" resultType="org.example.mybatisplus.dto.BikeVO">
+        SELECT b.id, b.name, b.brand, b.category, b.price, b.stock, b.status, b.image_url, b.description,
+               COALESCE(so.sold_count, 0)   AS sold_count,
+               COALESCE(so.sales_amount, 0) AS sales_amount
+        FROM t_bike b
+        <include refid="OrderStatSubQuery"/>
+        <include refid="BikeDynamicWhere"/>
+        <!-- 动态排序：用 choose 枚举白名单，避免直接拼接字符串导致 SQL 注入 -->
+        <choose>
+            <when test="q.orderBy == 'price_asc'">ORDER BY b.price ASC</when>
+            <when test="q.orderBy == 'price_desc'">ORDER BY b.price DESC</when>
+            <when test="q.orderBy == 'stock_asc'">ORDER BY b.stock ASC</when>
+            <when test="q.orderBy == 'stock_desc'">ORDER BY b.stock DESC</when>
+            <when test="q.orderBy == 'sold_desc'">ORDER BY sold_count DESC</when>
+            <otherwise>ORDER BY b.id DESC</otherwise>
+        </choose>
+    </select>
+
+    <!-- ================== 查询二：按分类聚合统计 ================== -->
+
+    <select id="statWithXml" resultType="org.example.mybatisplus.dto.CategoryStatVO">
+        SELECT b.category                     AS category,
+               COUNT(*)                       AS bike_count,
+               COALESCE(SUM(b.stock), 0)      AS total_stock,
+               ROUND(AVG(b.price), 2)         AS avg_price,
+               MAX(b.price)                   AS max_price,
+               MIN(b.price)                   AS min_price,
+               COALESCE(SUM(so.sold_count), 0)   AS sold_count,
+               COALESCE(SUM(so.sales_amount), 0) AS sales_amount
+        FROM t_bike b
+        <include refid="OrderStatSubQuery"/>
+        <include refid="BikeDynamicWhere"/>
+        GROUP BY b.category
+        <choose>
+            <when test="q.orderBy == 'sold_desc'">ORDER BY sold_count DESC</when>
+            <when test="q.orderBy == 'price_desc'">ORDER BY max_price DESC</when>
+            <when test="q.orderBy == 'price_asc'">ORDER BY min_price ASC</when>
+            <otherwise>ORDER BY bike_count DESC</otherwise>
+        </choose>
+    </select>
+
+</mapper>

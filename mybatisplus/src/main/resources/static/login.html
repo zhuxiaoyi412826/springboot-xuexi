@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>单车商城 - 登录</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1f6feb 0%, #21a179 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-box {
+            width: 380px;
+            background: #fff;
+            border-radius: 12px;
+            padding: 34px 32px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+        }
+
+        .login-box h1 {
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .login-box .sub {
+            text-align: center;
+            color: #8a94a6;
+            font-size: 13px;
+            margin-bottom: 24px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #eef0f4;
+        }
+
+        .tabs span {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            cursor: pointer;
+            font-size: 15px;
+            color: #8a94a6;
+        }
+
+        .tabs span.active {
+            color: #1f6feb;
+            font-weight: 700;
+            border-bottom: 2px solid #1f6feb;
+        }
+
+        .btn.full {
+            width: 100%;
+            padding: 11px;
+            font-size: 15px;
+        }
+
+        .tip {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #8a94a6;
+            line-height: 1.9;
+            background: #f7f9fc;
+            padding: 10px 12px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-box">
+    <h1>🚲 单车商城</h1>
+    <div class="sub">买自行车，就上单车商城</div>
+
+    <div class="tabs">
+        <span id="tabLogin" class="active">登录</span>
+        <span id="tabReg">注册</span>
+    </div>
+
+    <!-- 登录表单 -->
+    <div id="loginForm">
+        <div class="form-item">
+            <label>账号</label>
+            <input id="loginUsername" placeholder="请输入账号" value="admin">
+        </div>
+        <div class="form-item">
+            <label>密码</label>
+            <input id="loginPassword" type="password" placeholder="请输入密码" value="123456">
+        </div>
+        <button class="btn full" id="btnLogin">登 录</button>
+    </div>
+
+    <!-- 注册表单 -->
+    <div id="regForm" style="display:none">
+        <div class="form-item">
+            <label>账号</label>
+            <input id="regUsername" placeholder="请输入账号">
+        </div>
+        <div class="form-item">
+            <label>密码</label>
+            <input id="regPassword" type="password" placeholder="请输入密码">
+        </div>
+        <div class="form-item">
+            <label>昵称（选填）</label>
+            <input id="regNickname" placeholder="请输入昵称">
+        </div>
+        <div class="form-item">
+            <label>手机号（选填）</label>
+            <input id="regPhone" placeholder="请输入手机号">
+        </div>
+        <div class="form-item">
+            <label>收货地址（选填）</label>
+            <input id="regAddress" placeholder="请输入收货地址">
+        </div>
+        <button class="btn full green" id="btnReg">注 册</button>
+    </div>
+
+    <div class="tip">
+        管理员账号：<b>admin</b> / <b>123456</b> → 进入后台管理页面<br>
+        普通用户：<b>user</b> / <b>123456</b> → 进入自行车售卖页面
+    </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+    const tabLogin = document.getElementById('tabLogin');
+    const tabReg = document.getElementById('tabReg');
+
+    tabLogin.onclick = () => {
+        tabLogin.classList.add('active');
+        tabReg.classList.remove('active');
+        document.getElementById('loginForm').style.display = '';
+        document.getElementById('regForm').style.display = 'none';
+    };
+    tabReg.onclick = () => {
+        tabReg.classList.add('active');
+        tabLogin.classList.remove('active');
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('regForm').style.display = '';
+    };
+
+    document.getElementById('btnLogin').onclick = () => safe(async () => {
+        const data = await post('/api/auth/login', {
+            username: document.getElementById('loginUsername').value.trim(),
+            password: document.getElementById('loginPassword').value
+        });
+        toast('登录成功，正在跳转...');
+        setTimeout(() => (location.href = data.home), 500);
+    });
+
+    document.getElementById('btnReg').onclick = () => safe(async () => {
+        const data = await post('/api/auth/register', {
+            username: document.getElementById('regUsername').value.trim(),
+            password: document.getElementById('regPassword').value,
+            nickname: document.getElementById('regNickname').value.trim(),
+            phone: document.getElementById('regPhone').value.trim(),
+            address: document.getElementById('regAddress').value.trim()
+        });
+        toast('注册成功，正在跳转...');
+        setTimeout(() => (location.href = data.home), 500);
+    });
+
+    // 已登录则直接跳转对应首页
+    (async () => {
+        const user = await get('/api/auth/info').catch(() => null);
+        if (user) location.href = user.role === 'ADMIN' ? '/admin.html' : '/index.html';
+    })();
+</script>
+</body>
+</html>

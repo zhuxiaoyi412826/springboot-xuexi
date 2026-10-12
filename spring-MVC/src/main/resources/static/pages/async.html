@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>⑥ 异步请求</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>异步请求</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>⑥ 异步请求（Controller 线程立即释放）</h1>
+
+    <div class="panel">
+        <h2>Callable / WebAsyncTask / DeferredResult / CompletableFuture</h2>
+        <div class="row">
+            <button onclick="get('/mvc/async/callable')">Callable（约 1.5s）</button>
+            <button onclick="get('/mvc/async/task')">WebAsyncTask（含超时回调）</button>
+            <button onclick="get('/mvc/async/deferred')">DeferredResult（定时任务 1s 后回填）</button>
+            <button onclick="get('/mvc/async/future?name=Spring')">CompletableFuture + @Async</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>推送 / 流式</h2>
+        <div class="tip">下面两个按钮的结果会「边生成边显示」，适合观察长连接与流式响应。</div>
+        <div class="row">
+            <button class="green" onclick="stream('/mvc/async/emitter')">ResponseBodyEmitter（5 条推送）</button>
+            <button class="green" onclick="stream('/mvc/async/stream')">StreamingResponseBody（流式下载）</button>
+            <button onclick="sse()">SseEmitter（SSE 10 条）</button>
+            <button class="gray" onclick="$('out').textContent=''">清空</button>
+        </div>
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+<script>
+    /** 边读边显示：用 reader 逐块读取响应流 */
+    async function stream(url) {
+        const out = $('out');
+        out.textContent = '连接中：' + url + '\n';
+        const res = await fetch(url);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            out.textContent += decoder.decode(value, { stream: true });
+        }
+        out.textContent += '\n--- 结束 ---';
+    }
+
+    function sse() {
+        const out = $('out');
+        out.textContent = 'SSE 连接中……\n';
+        const es = new EventSource('/mvc/async/sse');
+        es.addEventListener('tick', e => { out.textContent += e.data + '\n'; });
+        es.addEventListener('error', () => { out.textContent += '--- SSE 关闭 ---\n'; es.close(); });
+    }
+</script>
+</body>
+</html>

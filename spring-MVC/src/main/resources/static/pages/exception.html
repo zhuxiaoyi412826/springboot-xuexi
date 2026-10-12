@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>⑩ 异常处理</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>异常处理</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>⑩ 异常处理链路</h1>
+
+    <div class="panel">
+        <h2>不同异常 → 不同处理结果</h2>
+        <div class="row">
+            <button class="orange" onclick="get('/mvc/ex/biz')">业务异常 BizException（400 + 业务码）</button>
+            <button class="orange" onclick="get('/mvc/ex/status')">ResponseStatusException（404）</button>
+            <button onclick="get('/mvc/ex/type?num=abc')">类型不匹配（400）</button>
+            <button onclick="get('/mvc/ex/missing')">缺少必填参数（400）</button>
+            <button onclick="get('/mvc/ex/special')">自定义 HandlerExceptionResolver（409）</button>
+            <button class="orange" onclick="get('/mvc/ex/error')">兜底 → ProblemDetail（500）</button>
+            <button onclick="get('/not-exist-xxx')">访问不存在地址（/error）</button>
+        </div>
+    </div>
+
+    <div class="tip">
+        处理顺序：<code>自定义 HandlerExceptionResolver（Ordered.HIGHEST_PRECEDENCE）</code>
+        → <code>ExceptionHandlerExceptionResolver（@ControllerAdvice）</code>
+        → <code>ResponseStatusExceptionResolver</code> → <code>DefaultHandlerExceptionResolver</code>
+        → 容器 /error。
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+</body>
+</html>

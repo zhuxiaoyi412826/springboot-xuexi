@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>① 返回值与视图</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>返回值与视图</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>① Controller 返回值与视图解析</h1>
+
+    <div class="panel">
+        <h2>视图渲染类（返回视图名，不返回 JSON）</h2>
+        <div class="tip">
+            这两个接口返回视图名 <code>static:hello</code>，由自定义的 <code>StaticViewResolver</code>
+            解析成 <code>/pages/hello.html</code> 并 forward。因为没有模板引擎，Model 数据只作为
+            request 属性存在（可看后端日志 <code>[LogInterceptor] postHandle -&gt; model=[...]</code>），
+            想要回显数据请接入 Thymeleaf 或让 View 直接输出 JSON。
+        </div>
+        <div class="row">
+            <button onclick="location.href='/mvc/hello/view'">/mvc/hello/view（String + Model）</button>
+            <button onclick="location.href='/mvc/hello/mav'">/mvc/hello/mav（ModelAndView）</button>
+            <button onclick="location.href='/home'">/home（ViewControllerRegistry 直接映射）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>转发与重定向</h2>
+        <div class="row">
+            <button onclick="location.href='/mvc/hello/forward'">forward:/index.html（地址栏不变）</button>
+            <button onclick="location.href='/mvc/hello/redirect'">redirect:/index.html（带 Flash 属性）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>直接写响应</h2>
+        <div class="row">
+            <button onclick="get('/mvc/hello/json')">@ResponseBody 返回 Result</button>
+            <button onclick="get('/mvc/hello/text')">@ResponseBody 返回字符串</button>
+            <button onclick="get('/mvc/hello/void')">void 返回值（自己写响应）</button>
+            <button onclick="get('/mvc/hello/servlet-api')">原生 Servlet API 入参</button>
+            <button class="green" onclick="get('/mvc/hello/created')">@ResponseStatus(201)</button>
+            <button class="gray" onclick="fetchHead()">HEAD 请求观察响应头</button>
+        </div>
+        <pre id="out">点击按钮查看响应……</pre>
+    </div>
+</div>
+<script src="../js/common.js"></script>
+<script>
+    async function fetchHead() {
+        const res = await fetch('/mvc/hello/json', { method: 'HEAD' });
+        let head = 'HTTP ' + res.status + '\n';
+        res.headers.forEach((v, k) => head += k + ': ' + v + '\n');
+        $('out').textContent = head + '\n（HEAD 请求没有响应体）';
+    }
+</script>
+</body>
+</html>

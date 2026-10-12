@@ -1,0 +1,31 @@
+﻿
+================ 1. anonymous browsing ================
+anonymous video count = 10
+================ 2. login (form + CSRF) ================
+admin roles = ROLE_USER,ROLE_ADMIN
+================ 3. authorization (URL + method) ================
+================ 4. object-level permission (delete comment) ================
+new comment id = 5
+================ 5. data permission (private video) ================
+zhangsan visible count = 12 (anonymous was smaller)
+================ 6. fine-grained authority (VIP download) ================
+================ 7. CSRF ================
+================ 8. HTTP Basic / Digest ================
+================ 9. OAuth2 resource server (JWT) ================
+jwt length = 747
+================ 10. custom filter (API Key) ================
+================ 11. session management ================
+online sessions = 4
+================ 12. disabled account ================
+locked login msg = 账号已被禁用，请联系管理员
+================ 13. security headers ================
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data
+:; media-src 'self' https: blob:; connect-src 'self'; frame-ancestors 'none'
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
+================ 14. remember-me ================
+remember-me cookie present: True
+
+

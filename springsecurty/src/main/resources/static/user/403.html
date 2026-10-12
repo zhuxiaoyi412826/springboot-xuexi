@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>403 无权限</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <span class="logo">视频小站 <small>403</small></span>
+    <span class="spacer"></span>
+    <a href="home.html">回首页</a>
+</div>
+<div class="container">
+    <h1>403 - 没有访问权限</h1>
+    <div class="err" id="msg">你已登录，但没有访问该资源的权限。</div>
+    <div class="panel">
+        <p>可能发生的情况：</p>
+        <ul>
+            <li>用普通用户账号访问了 <code>/admin/**</code>（需要 ROLE_ADMIN）</li>
+            <li>尝试删除别人的评论 / 修改别人的视频（对象级权限不足）</li>
+            <li>调用了需要细粒度权限（如 <code>user:manage</code>、<code>video:write</code>）的接口</li>
+        </ul>
+        <p class="muted">页面请求会跳转到这里；XHR / API 请求会直接返回 403 JSON。</p>
+    </div>
+</div>
+<script src="../js/common.js"></script>
+<script src="../js/403.js"></script>
+</body>
+</html>

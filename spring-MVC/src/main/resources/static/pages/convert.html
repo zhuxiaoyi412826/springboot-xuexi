@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>③ 类型转换与格式化</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>类型转换与格式化</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>③ 类型转换 / 格式化</h1>
+
+    <div class="panel">
+        <h2>自定义 Converter：String → Dept</h2>
+        <div class="tip">请求参数 <code>dept=10:研发部</code> 由 <code>StringToDeptConverter</code> 转成对象。</div>
+        <div class="row">
+            <label>dept</label><input id="dept" type="text" value="10:研发部">
+            <button onclick="get('/mvc/convert/dept?dept=' + encodeURIComponent($v('dept')))">/mvc/convert/dept</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>自定义 Formatter：BigDecimal ⇄ "1,234.56"</h2>
+        <div class="row">
+            <label>money</label><input id="money" type="text" value="1,234.56">
+            <button onclick="get('/mvc/convert/money?money=' + encodeURIComponent($v('money')))">/mvc/convert/money</button>
+            <button onclick="get('/mvc/convert/number?amount=1234.567')">@NumberFormat(pattern="#,##0.00")</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>ConversionService 编程式使用</h2>
+        <div class="row">
+            <button onclick="get('/mvc/convert/service')">/mvc/convert/service（String→Integer/Boolean/枚举/LocalDate）</button>
+        </div>
+    </div>
+
+    <div class="tip">
+        三种机制对比：<code>Converter</code>（通用类型转换）、<code>Formatter</code>（感知 Locale 的双向格式化）、
+        <code>PropertyEditor</code>（JDK 原生，由 @InitBinder 注册，见 User.vipExpire 字段）。
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+</body>
+</html>

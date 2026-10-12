@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>管理后台 - 在线听歌</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="admin-layout">
+    <div class="admin-side">
+        <div style="padding:10px 14px;color:var(--primary);font-weight:700">🎛 管理后台</div>
+        <a href="javascript:show('overview')" id="tab-overview" class="active">概览</a>
+        <a href="javascript:show('songs')" id="tab-songs">歌曲管理</a>
+        <a href="javascript:show('users')" id="tab-users">用户管理</a>
+        <a href="javascript:show('comments')" id="tab-comments">评论管理</a>
+        <a href="javascript:show('playlists')" id="tab-playlists">歌单审核</a>
+        <a href="javascript:show('cache')" id="tab-cache">缓存 / Redis</a>
+        <a href="javascript:show('lab')" id="tab-lab">Redis 实验室</a>
+        <a href="/user/index.html" style="margin-top:16px">← 回到用户端</a>
+        <a href="javascript:doLogout()">退出登录</a>
+    </div>
+    <div class="admin-main">
+        <!-- 概览 -->
+        <div id="pane-overview">
+            <div class="page-title">概览</div>
+            <div class="stat-cards" id="stat-cards"></div>
+            <pre class="json" id="overview-json">加载中…</pre>
+        </div>
+
+        <!-- 歌曲管理 -->
+        <div id="pane-songs" class="hidden">
+            <div class="page-title">歌曲管理</div>
+            <div class="card row">
+                <input id="s-title" placeholder="歌名">
+                <input id="s-singer" placeholder="歌手">
+                <input id="s-audio" placeholder="音频地址" style="min-width:260px">
+                <select id="s-category">
+                    <option>流行</option><option>民谣</option><option>摇滚</option>
+                    <option>电子</option><option>古典</option>
+                </select>
+                <input id="s-duration" placeholder="时长(秒)" style="width:100px" value="240">
+                <button onclick="addSong()">新增歌曲</button>
+            </div>
+            <table style="margin-top:12px">
+                <thead><tr><th>ID</th><th>歌名</th><th>歌手</th><th>分类</th><th>播放</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="song-rows"></tbody>
+            </table>
+        </div>
+
+        <!-- 用户管理 -->
+        <div id="pane-users" class="hidden">
+            <div class="page-title">用户管理</div>
+            <div class="card row">
+                <input id="u-keyword" placeholder="用户名/昵称">
+                <button onclick="loadUsers()">搜索</button>
+                <span class="muted small" id="online-info"></span>
+            </div>
+            <table style="margin-top:12px">
+                <thead><tr><th>ID</th><th>用户名</th><th>昵称</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="user-rows"></tbody>
+            </table>
+        </div>
+
+        <!-- 评论管理 -->
+        <div id="pane-comments" class="hidden">
+            <div class="page-title">评论管理</div>
+            <div class="card row">
+                <input id="c-keyword" placeholder="关键词">
+                <button onclick="loadComments()">搜索</button>
+            </div>
+            <table style="margin-top:12px">
+                <thead><tr><th>ID</th><th>歌曲</th><th>用户</th><th>内容</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="comment-rows"></tbody>
+            </table>
+        </div>
+
+        <!-- 歌单审核 -->
+        <div id="pane-playlists" class="hidden">
+            <div class="page-title">歌单审核 <span class="small muted">待审核 id 存在 Redis List 队列里</span></div>
+            <div class="card small" id="audit-queue"></div>
+            <table style="margin-top:12px">
+                <thead><tr><th>ID</th><th>名称</th><th>创建人</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="playlist-rows"></tbody>
+            </table>
+        </div>
+
+        <!-- 缓存 / Redis -->
+        <div id="pane-cache" class="hidden">
+            <div class="page-title">缓存与 Redis 面板</div>
+            <div class="card row">
+                <select id="cache-name">
+                    <option value="song">song（歌曲详情）</option>
+                    <option value="songList">songList（歌曲列表）</option>
+                    <option value="comment">comment（评论）</option>
+                    <option value="search">search（搜索）</option>
+                    <option value="user">user（用户）</option>
+                </select>
+                <button onclick="clearCache()">清理该缓存</button>
+                <button class="ghost" onclick="warm()">手动预热</button>
+                <button class="ghost" onclick="resetStats()">重置统计</button>
+            </div>
+            <div class="card row" style="margin-top:12px">
+                <span class="small muted">层级开关：</span>
+                <button class="ghost tiny" onclick="setLevel('l1', true)">L1 开</button>
+                <button class="ghost tiny" onclick="setLevel('l1', false)">L1 关</button>
+                <button class="ghost tiny" onclick="setLevel('l2', true)">L2 开</button>
+                <button class="ghost tiny" onclick="setLevel('l2', false)">L2 关</button>
+                <button class="ghost tiny" onclick="setLevel('bloom', true)">布隆 开</button>
+                <button class="ghost tiny" onclick="setLevel('bloom', false)">布隆 关</button>
+            </div>
+            <div class="card row" style="margin-top:12px">
+                <input id="key-pattern" value="music:*" style="min-width:240px">
+                <button onclick="scanKeys()">SCAN</button>
+                <span class="small muted">（生产环境禁止 KEYS *，一律用 SCAN）</span>
+            </div>
+            <pre class="json" id="keys-json" style="margin-top:12px"></pre>
+            <div class="section-title">Pub/Sub 最近通知</div>
+            <pre class="json" id="notices"></pre>
+        </div>
+
+        <!-- Redis 实验室 -->
+        <div id="pane-lab" class="hidden">
+            <div class="page-title">Redis 实验室 <span class="small muted">每个按钮都对应一个真实 Redis 命令</span></div>
+            <div class="card">
+                <div class="row"><b>String</b>
+                    <input id="lab-k" placeholder="key" value="demo">
+                    <input id="lab-v" placeholder="value" value="hello">
+                    <button class="tiny" onclick="lab('/api/lab/string/set?k=' + v('lab-k') + '&v=' + v('lab-v') + '&ttl=60')">SET</button>
+                    <button class="tiny" onclick="lab('/api/lab/string/incr?k=' + v('lab-k'))">INCR</button>
+                    <button class="tiny" onclick="lab('/api/lab/string/setnx?k=' + v('lab-k'))">SETNX（幂等/锁）</button>
+                </div>
+                <div class="row"><b>Hash</b>
+                    <input id="lab-f" placeholder="field" value="nickname">
+                    <button class="tiny" onclick="lab('/api/lab/hash/set?k=' + v('lab-k') + '&f=' + v('lab-f') + '&v=' + v('lab-v'))">HSET</button>
+                    <button class="tiny" onclick="lab('/api/lab/hash/incr?k=' + v('lab-k') + '&f=' + v('lab-f'))">HINCRBY</button>
+                </div>
+                <div class="row"><b>List</b>
+                    <button class="tiny" onclick="lab('/api/lab/list/push?k=recent&v=' + v('lab-v'))">LPUSH+LTRIM</button>
+                    <button class="tiny" onclick="lab('/api/lab/list/pop?k=recent')">RPOP</button>
+                </div>
+                <div class="row"><b>Set</b>
+                    <button class="tiny" onclick="lab('/api/lab/set/add?k=like&m=' + v('lab-v'))">SADD</button>
+                    <button class="tiny" onclick="lab('/api/lab/set/add?k=like2&m=' + v('lab-v'))">SADD(另一个集合)</button>
+                    <button class="tiny" onclick="lab('/api/lab/set/inter?k1=like&k2=like2')">SINTER</button>
+                </div>
+                <div class="row"><b>ZSet</b>
+                    <button class="tiny" onclick="lab('/api/lab/zset/incr?k=rank&m=' + v('lab-v'))">ZINCRBY</button>
+                    <button class="tiny" onclick="lab('/api/lab/zset/top?k=rank&n=10')">ZREVRANGE Top10</button>
+                </div>
+                <div class="row"><b>Bitmap</b>
+                    <button class="tiny" onclick="lab('/api/lab/bitmap/set?k=sign&offset=' + Math.floor(Math.random() * 30))">SETBIT（随机签到）</button>
+                    <button class="tiny" onclick="lab('/api/lab/bitmap/get?k=sign&offset=0')">GETBIT</button>
+                </div>
+                <div class="row"><b>HyperLogLog</b>
+                    <button class="tiny" onclick="lab('/api/lab/hll/add?k=uv&v=user' + Math.floor(Math.random() * 1000))">PFADD（随机用户）</button>
+                </div>
+                <div class="row"><b>Geo</b>
+                    <button class="tiny" onclick="lab('/api/lab/geo/add?k=city&member=' + v('lab-v') + '&lng=116.40&lat=39.90')">GEOADD 北京</button>
+                    <button class="tiny" onclick="lab('/api/lab/geo/near?k=city&lng=116.40&lat=39.90&radius=100')">GEORADIUS</button>
+                </div>
+                <div class="row"><b>Stream</b>
+                    <button class="tiny" onclick="addStream()">XADD</button>
+                    <button class="tiny" onclick="lab('/api/lab/stream/read?k=play&n=10')">XREAD</button>
+                </div>
+                <div class="row"><b>高级</b>
+                    <button class="tiny" onclick="lab('/api/lab/lock?name=demo&lease=10')">分布式锁</button>
+                    <button class="tiny" onclick="lab('/api/lab/ratelimit?biz=demo&capacity=5&refill=1')">Lua 限流（连点）</button>
+                    <button class="tiny" onclick="lab('/api/lab/pipeline?n=200')">Pipeline 对比</button>
+                    <button class="tiny" onclick="lab('/api/lab/tx')">事务 MULTI/EXEC</button>
+                </div>
+                <div class="row"><b>其它</b>
+                    <input id="lab-payload" placeholder="延迟任务 payload" value="song:1:online" style="min-width:200px">
+                    <button class="tiny" onclick="lab('/api/lab/delay/add?payload=' + v('lab-payload') + '&seconds=30')">延迟队列</button>
+                    <button class="tiny" onclick="lab('/api/lab/delay/list')">查看队列</button>
+                    <button class="tiny" onclick="lab('/api/lab/id/next?biz=demo')">分布式 ID</button>
+                    <button class="tiny" onclick="lab('/api/lab/bloom/add?name=demo&value=' + v('lab-v'))">布隆加入</button>
+                    <button class="tiny" onclick="lab('/api/lab/bloom/exists?name=demo&value=' + v('lab-v'))">布隆判断</button>
+                    <button class="tiny" onclick="lab('/api/lab/pubsub/pub?msg=hello-from-admin')">PUBLISH</button>
+                </div>
+            </div>
+            <pre class="json" id="lab-out">点上面的按钮，结果会显示在这里</pre>
+        </div>
+    </div>
+</div>
+<script src="/js/common.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

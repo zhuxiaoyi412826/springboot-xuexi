@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>登录 - 小说阅读器</title>
+    <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+<div class="topbar"><div class="inner"></div></div>
+
+<div class="login-wrap">
+    <div class="panel">
+        <div class="login-tabs">
+            <span class="active" data-t="login">登录</span>
+            <span data-t="register">注册</span>
+        </div>
+
+        <div id="loginBox">
+            <input id="username" placeholder="账号" autocomplete="off">
+            <input id="password" type="password" placeholder="密码">
+            <button class="btn" id="btnLogin">登 录</button>
+            <p style="margin-top:14px;color:#999;font-size:12px;line-height:1.8">
+                管理员：<b>admin / 123456</b> → 进入后台管理<br>
+                普通用户：<b>zhangsan / 123456</b> → 进入书城
+            </p>
+        </div>
+
+        <div id="regBox" style="display:none">
+            <input id="rUsername" placeholder="账号（3-20 位）">
+            <input id="rPassword" type="password" placeholder="密码（至少 6 位）">
+            <input id="rNickname" placeholder="昵称（选填）">
+            <button class="btn" id="btnRegister">注 册</button>
+            <p style="margin-top:14px;color:#999;font-size:12px">注册后自动登录，账号为普通用户权限。</p>
+        </div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+    document.querySelectorAll('.login-tabs span').forEach(tab => {
+        tab.onclick = () => {
+            document.querySelectorAll('.login-tabs span').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const isReg = tab.dataset.t === 'register';
+            document.getElementById('regBox').style.display = isReg ? 'block' : 'none';
+            document.getElementById('loginBox').style.display = isReg ? 'none' : 'block';
+        };
+    });
+
+    document.getElementById('btnLogin').onclick = () => safe(async () => {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        if (!username || !password) return toast('请输入账号和密码');
+        const params = new URLSearchParams({ username, password });
+        const data = await request('/api/auth/login', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString()
+        });
+        if (data) location.href = data.home;
+    });
+
+    document.getElementById('btnRegister').onclick = () => safe(async () => {
+        const username = document.getElementById('rUsername').value.trim();
+        const password = document.getElementById('rPassword').value;
+        const nickname = document.getElementById('rNickname').value.trim();
+        if (!username || !password) return toast('请输入账号和密码');
+        if (password.length < 6) return toast('密码至少 6 位');
+        const params = new URLSearchParams({ username, password, nickname });
+        const data = await request('/api/auth/register', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString()
+        });
+        if (data) location.href = data.home;
+    });
+
+    // 已登录直接跳对应主页
+    loadUser().then(u => {
+        renderTopbar('login');
+        if (u) location.href = u.role === 'ADMIN' ? 'admin.html' : 'index.html';
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            document.getElementById('regBox').style.display === 'block'
+                ? document.getElementById('btnRegister').click()
+                : document.getElementById('btnLogin').click();
+        }
+    });
+</script>
+</body>
+</html>

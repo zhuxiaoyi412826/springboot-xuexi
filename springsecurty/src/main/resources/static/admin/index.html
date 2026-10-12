@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>管理后台 - 视频小站</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div id="topbar" class="topbar"></div>
+<div class="container">
+    <h1>管理后台</h1>
+    <div id="msg"></div>
+
+    <div class="panel">
+        <div class="tabs">
+            <button id="tabStats" class="active">概览</button>
+            <button id="tabUsers">用户管理</button>
+            <button id="tabVideos">视频管理</button>
+            <button id="tabComments">评论管理</button>
+            <button id="tabSessions">在线会话</button>
+            <button id="tabLogs">登录日志</button>
+        </div>
+
+        <div id="boxStats"></div>
+        <div id="boxUsers" class="hidden"></div>
+        <div id="boxVideos" class="hidden"></div>
+        <div id="boxComments" class="hidden"></div>
+        <div id="boxSessions" class="hidden"></div>
+        <div id="boxLogs" class="hidden"></div>
+    </div>
+
+    <pre class="log" id="log"></pre>
+
+    <div class="tip">
+        本页受双重保护：URL 级（<code>/app/admin/**</code> 需要 <code>user:manage</code> 权限）
+        + 方法级（Service 上的 @PreAuthorize/@Secured/@RolesAllowed）。
+        用普通账号直接访问本页会被重定向到 403 页面。
+    </div>
+</div>
+<script src="../js/common.js"></script>
+<script src="../js/admin.js"></script>
+</body>
+</html>

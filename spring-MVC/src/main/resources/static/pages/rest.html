@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>⑤ REST 接口</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>REST</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>⑤ REST 风格接口</h1>
+
+    <div class="panel">
+        <h2>CRUD</h2>
+        <div class="row">
+            <button onclick="get('/mvc/api/users')">GET 列表</button>
+            <button onclick="get('/mvc/api/users/1')">GET /1（命中）</button>
+            <button onclick="get('/mvc/api/users/999')">GET /999（404 + 响应头）</button>
+            <button class="green" onclick="post('/mvc/api/users', {username:'wangwu', nickname:'王五', age:25, phone:'13700137000'})">POST 新增（201）</button>
+            <button onclick="put('/mvc/api/users/1', {username:'zhangsan', nickname:'张三三', age:21})">PUT 全量更新</button>
+            <button onclick="run('PATCH', '/mvc/api/users/1', {nickname:'小张', age:22})">PATCH 局部更新</button>
+            <button class="orange" onclick="del('/mvc/api/users/2')">DELETE /2（204）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>@JsonView：按视图裁剪字段</h2>
+        <div class="row">
+            <button onclick="get('/mvc/api/users/view/public')">Public 视图（不含 phone/balance）</button>
+            <button onclick="get('/mvc/api/users/view/admin')">Admin 视图（含敏感字段）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>HttpEntity / RequestEntity / 响应头</h2>
+        <div class="row">
+            <button onclick="get('/mvc/api/users/headers')">返回 HttpHeaders（无响应体）</button>
+            <button onclick="post('/mvc/api/users/echo', {username:'echo', age:18})">RequestEntity 回显请求</button>
+        </div>
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+</body>
+</html>

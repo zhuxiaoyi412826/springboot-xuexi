@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>② 参数绑定</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>参数绑定</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>② 请求参数绑定</h1>
+
+    <div class="panel">
+        <h2>简单参数 / Map / 数组集合</h2>
+        <div class="row">
+            <label>name</label><input id="name" type="text" value="张三">
+            <label>age</label><input id="age" type="number" value="20">
+            <button onclick="get('/mvc/bind/simple?name=' + encodeURIComponent($v('name')) + '&age=' + $v('age') + '&hobbies=a&hobbies=b')">/mvc/bind/simple</button>
+            <button onclick="get('/mvc/bind/map?a=1&b=2&c=3')">@RequestParam Map</button>
+            <button onclick="get('/mvc/bind/list?tags=x,y&ids=1&ids=2')">List / 数组</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>路径变量 / 请求头 / Cookie / 请求属性</h2>
+        <div class="row">
+            <button onclick="get('/mvc/bind/path/1001/spring-mvc')">@PathVariable</button>
+            <button onclick="get('/mvc/bind/header')">@RequestHeader</button>
+            <button onclick="get('/mvc/bind/cookie')">@CookieValue（先去会话页设置 sid）</button>
+            <button onclick="get('/mvc/bind/attr')">@RequestAttribute（Filter 写入）</button>
+            <button onclick="get('/mvc/bind/servlet-api?x=1')">原生 Servlet API</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>POJO 绑定（含嵌套对象、集合、自定义类型、日期）</h2>
+        <div class="tip">
+            示例：<code>/mvc/bind/pojo?username=zs&amp;age=20&amp;address.province=广东&amp;address.city=深圳
+            &amp;tags=a&amp;tags=b&amp;dept=10:研发部&amp;birthday=2000-01-01&amp;vipExpire=2030-12-31</code><br>
+            dept 走自定义 Converter，vipExpire 走全局 @InitBinder 注册的 PropertyEditor。
+        </div>
+        <div class="row">
+            <button onclick="get('/mvc/bind/pojo?username=zs&age=20&address.province=%E5%B9%BF%E4%B8%9C&address.city=%E6%B7%B1%E5%9C%B3&tags=a&tags=b&dept=10:%E7%A0%94%E5%8F%91%E9%83%A8&birthday=2000-01-01&vipExpire=2030-12-31')">/mvc/bind/pojo</button>
+            <button onclick="get('/mvc/bind/date?date=2026-01-01&amount=1,234.56')">@DateTimeFormat / @NumberFormat</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>@ModelAttribute + BindingResult（POST 表单）</h2>
+        <div class="tip">@InitBinder("u") 设置了字段白名单：提交 id 会被忽略（防过度绑定）。</div>
+        <div class="row">
+            <button class="green" onclick="post('/mvc/bind/model-attr?username=zs&age=20&tags=java&tags=mvc&id=999')">提交（带上 id=999，会被白名单忽略）</button>
+            <button onclick="post('/mvc/bind/model-attr?username=z&age=200')">提交非法数据看 BindingResult</button>
+        </div>
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+</body>
+</html>

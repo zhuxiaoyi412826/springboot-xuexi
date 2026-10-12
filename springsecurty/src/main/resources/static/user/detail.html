@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>视频详情 - 视频小站</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div id="topbar" class="topbar"></div>
+<div class="container">
+    <div id="msg"></div>
+
+    <div class="panel">
+        <h1 id="title">加载中……</h1>
+        <video id="player" class="video-box" controls preload="metadata" style="height:420px"></video>
+        <div class="row" style="margin-top:10px">
+            <span id="meta" class="muted"></span>
+            <span class="spacer" style="flex:1"></span>
+            <button class="orange" id="btnLike">点赞</button>
+            <button class="green" id="btnFav">收藏</button>
+            <button id="btnDownload">VIP 下载</button>
+        </div>
+        <div id="desc" class="muted" style="margin-top:8px"></div>
+    </div>
+
+    <div class="panel">
+        <h2>评论</h2>
+        <div class="row">
+            <input id="comment" type="text" placeholder="说点什么……（需要登录，且要有 comment:write 权限）" style="flex:1">
+            <button id="btnComment">发表</button>
+        </div>
+        <table id="comments">
+            <tr><th>用户</th><th>内容</th><th>时间</th><th>操作</th></tr>
+        </table>
+        <div class="muted">删除评论走「对象级权限」：只有评论作者本人或管理员能删。</div>
+    </div>
+
+    <div class="panel">
+        <h2>最近一次响应</h2>
+        <pre class="log" id="log"></pre>
+    </div>
+</div>
+<script src="../js/common.js"></script>
+<script src="../js/detail.js"></script>
+</body>
+</html>

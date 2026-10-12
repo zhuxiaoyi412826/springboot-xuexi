@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>⑪ 扩展点</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>自定义扩展点</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>⑪ 自定义参数解析器 / 返回值处理器 / 消息转换器</h1>
+
+    <div class="panel">
+        <h2>自定义参数解析器 @CurrentUser</h2>
+        <div class="tip">未登录时返回「游客」对象；登录后再点一次会变成真正的登录用户。</div>
+        <div class="row">
+            <button class="green" onclick="get('/mvc/advanced/me')">/mvc/advanced/me</button>
+            <a href="session.html"><button class="gray">先去登录</button></a>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>自定义返回值处理器 @WrapResult</h2>
+        <div class="tip">
+            方法只返回 List&lt;User&gt;，被 <code>WrapResultReturnValueHandler</code>
+            自动包装成 <code>{"code":0,"msg":"ok","data":[...]}</code>。
+        </div>
+        <div class="row">
+            <button class="green" onclick="get('/mvc/advanced/list')">/mvc/advanced/list</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>自定义 HttpMessageConverter（text/x-user）</h2>
+        <div class="row">
+            <button onclick="run('GET', '/mvc/advanced/text-user', undefined, true, 'text/x-user')">Accept: text/x-user 读取用户</button>
+            <button onclick="run('POST', '/mvc/advanced/text-user', 'wangwu:25:王五', false, 'text/x-user')">POST 提交 "wangwu:25:王五"</button>
+            <button onclick="run('GET', '/mvc/advanced/negotiate', undefined, true, 'text/x-user')">内容协商（Accept 决定格式）</button>
+            <button onclick="get('/mvc/advanced/negotiate')">内容协商（Accept: application/json）</button>
+        </div>
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+<script>
+    /** 支持自定义 Accept / Content-Type 的请求 */
+    async function runWithHeaders(method, url, body, accept, contentType) {
+        const out = $('out');
+        out.textContent = '请求中：' + method + ' ' + url + '\nAccept: ' + accept + '\n';
+        const headers = { 'Accept': accept };
+        if (contentType) headers['Content-Type'] = contentType;
+        try {
+            const res = await fetch(url, { method, headers, credentials: 'same-origin', body });
+            const text = await res.text();
+            out.textContent = 'HTTP ' + res.status + '\n' + text;
+        } catch (e) {
+            out.textContent = '请求失败：' + e.message;
+        }
+    }
+
+    // 覆盖本页的 run，兼容第 5 个参数（自定义媒体类型）
+    const _run = run;
+    run = function (method, url, body, asJson, mediaType) {
+        if (mediaType) {
+            return runWithHeaders(method, url, typeof body === 'string' ? body : undefined,
+                mediaType, typeof body === 'string' ? mediaType : undefined);
+        }
+        return _run(method, url, body, asJson);
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>⑫ 路径匹配与跨域</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>路径匹配 / CORS</small></div>
+    <a href="../index.html">首页</a>
+</div>
+<div class="container">
+    <h1>⑫ 请求映射条件与跨域</h1>
+
+    <div class="panel">
+        <h2>Ant 风格通配符</h2>
+        <div class="row">
+            <button onclick="get('/mvc/path/ant/a')">/mvc/path/ant/a（单层 *）</button>
+            <button onclick="get('/mvc/path/ant/a/b/c')">/mvc/path/ant/a/b/c（多层 **）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>正则占位符</h2>
+        <div class="row">
+            <button onclick="get('/mvc/path/regex/123')">/regex/123（数字规则）</button>
+            <button onclick="get('/mvc/path/regex/abc')">/regex/abc（字母规则）</button>
+            <button class="orange" onclick="get('/mvc/path/regex/A1')">/regex/A1（两条都不匹配 → 404）</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>params / headers / consumes 限定</h2>
+        <div class="row">
+            <button onclick="get('/mvc/path/condition?type=json')">params="type=json"</button>
+            <button onclick="get('/mvc/path/condition')">params="!type"</button>
+            <button onclick="withHeader('/mvc/path/condition?type=header', 'X-Api-Version', '2')">headers="X-Api-Version=2"（带请求头）</button>
+            <button class="orange" onclick="withHeader('/mvc/path/condition?type=header', 'X-Api-Version', '1')">同样的 URL 但头不匹配 → 404</button>
+            <button onclick="post('/mvc/path/consume', {a:1})">consumes=application/json</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>CORS</h2>
+        <div class="tip">
+            全局配置放行 <code>/mvc/cors/**</code>；方法级 <code>@CrossOrigin</code> 只允许指定来源。
+            可用 <code>curl -i -H "Origin: http://localhost:5173" ...</code> 观察
+            <code>Access-Control-Allow-Origin</code> 响应头。
+        </div>
+        <div class="row">
+            <button onclick="get('/mvc/cors/global')">/mvc/cors/global（全局配置）</button>
+            <button onclick="post('/mvc/cors/annotation', {})">/mvc/cors/annotation（方法级）</button>
+        </div>
+    </div>
+
+    <pre id="out">点击按钮查看响应……</pre>
+</div>
+<script src="../js/common.js"></script>
+<script>
+    /** 带自定义请求头访问 */
+    async function withHeader(url, name, value) {
+        const out = $('out');
+        out.textContent = '请求中：GET ' + url + '\n' + name + ': ' + value + '\n';
+        try {
+            const res = await fetch(url, { headers: { [name]: value }, credentials: 'same-origin' });
+            const text = await res.text();
+            out.textContent = 'HTTP ' + res.status + '\n' + text;
+        } catch (e) {
+            out.textContent = '请求失败：' + e.message;
+        }
+    }
+</script>
+</body>
+</html>

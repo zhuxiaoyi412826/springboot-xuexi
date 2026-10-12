@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Spring MVC 实验室</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="topbar">
+    <div class="logo">Spring MVC 实验室 <small>覆盖 Spring MVC 全部知识点</small></div>
+    <a href="index.html">首页</a>
+    <a href="/mvc/monitor/mappings" target="_blank">查看所有映射</a>
+    <a href="/my-servlet?name=Tom" target="_blank">原生 Servlet</a>
+</div>
+
+<div class="container">
+    <h1>知识点实验清单</h1>
+    <div class="tip">
+        每个页面都对应 Spring MVC 的一个知识域，页面上的按钮会真实调用后端接口，
+        右下（或下方）黑框里显示 HTTP 状态码与响应体。
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <a href="pages/hello.html">① 返回值与视图</a>
+            <p>@ResponseBody、ModelAndView、forward、redirect、void、@ResponseStatus、自定义 ViewResolver</p>
+        </div>
+        <div class="card">
+            <a href="pages/param.html">② 参数绑定</a>
+            <p>@RequestParam/@PathVariable/@RequestHeader/@CookieValue/@RequestAttribute/@ModelAttribute、POJO 嵌套、集合</p>
+        </div>
+        <div class="card">
+            <a href="pages/convert.html">③ 类型转换与格式化</a>
+            <p>自定义 Converter、Formatter、PropertyEditor、@DateTimeFormat/@NumberFormat、ConversionService</p>
+        </div>
+        <div class="card">
+            <a href="pages/validate.html">④ 数据校验</a>
+            <p>@Valid、@Validated 分组、自定义约束注解、BindingResult、Spring Validator</p>
+        </div>
+        <div class="card">
+            <a href="pages/rest.html">⑤ REST 接口</a>
+            <p>@RestController、ResponseEntity、HttpEntity/RequestEntity、@JsonView、consumes/produces</p>
+        </div>
+        <div class="card">
+            <a href="pages/async.html">⑥ 异步请求</a>
+            <p>Callable、WebAsyncTask、DeferredResult、ResponseBodyEmitter、SSE、StreamingResponseBody</p>
+        </div>
+        <div class="card">
+            <a href="pages/file.html">⑦ 文件上传下载</a>
+            <p>MultipartFile、多文件、@RequestPart+JSON、Part、三种下载方式</p>
+        </div>
+        <div class="card">
+            <a href="pages/session.html">⑧ 会话与 Cookie</a>
+            <p>HttpSession、@SessionAttributes、FlashMap/RedirectAttributes、Cookie 读写删</p>
+        </div>
+        <div class="card">
+            <a href="pages/i18n.html">⑨ 国际化</a>
+            <p>MessageSource、LocaleResolver、LocaleChangeInterceptor（?lang=en_US）</p>
+        </div>
+        <div class="card">
+            <a href="pages/exception.html">⑩ 异常处理</a>
+            <p>@ControllerAdvice、自定义 HandlerExceptionResolver、ResponseStatusException、ProblemDetail</p>
+        </div>
+        <div class="card">
+            <a href="pages/advanced.html">⑪ 扩展点</a>
+            <p>自定义参数解析器、返回值处理器、HttpMessageConverter、内容协商</p>
+        </div>
+        <div class="card">
+            <a href="pages/path.html">⑫ 路径与跨域</a>
+            <p>Ant 通配、正则占位符、params/headers/consumes 条件、CORS</p>
+        </div>
+        <div class="card">
+            <a href="pages/monitor.html">⑬ 运行时观察</a>
+            <p>HandlerMapping 全量映射、拦截器/过滤器/监听器痕迹、在线会话数</p>
+        </div>
+    </div>
+
+    <h2>快捷调试</h2>
+    <div class="panel">
+        <div class="row">
+            <button onclick="get('/mvc/hello/json')">/mvc/hello/json</button>
+            <button onclick="get('/mvc/hello/text')">/mvc/hello/text</button>
+            <button onclick="get('/mvc/hello/created')">/mvc/hello/created（201）</button>
+            <button onclick="get('/mvc/hello/void')">/mvc/hello/void</button>
+            <button onclick="get('/mvc/api/users')">用户列表</button>
+            <button class="gray" onclick="$('out').textContent=''">清空</button>
+        </div>
+        <pre id="out">点击按钮查看响应……</pre>
+    </div>
+</div>
+<script src="js/common.js"></script>
+</body>
+</html>

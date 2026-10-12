@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    统计报表 XML —— SQL 函数与分组统计集中演示区
+-->
+<mapper namespace="org.example.mybatis.mapper.StatMapper">
+
+    <resultMap id="CategoryStatMap" type="org.example.mybatis.dto.CategoryStatVO">
+        <result column="category_id" property="categoryId"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="novel_count" property="novelCount"/>
+        <result column="total_words" property="totalWords"/>
+        <result column="avg_words" property="avgWords"/>
+        <result column="max_words" property="maxWords"/>
+        <result column="min_words" property="minWords"/>
+        <result column="total_views" property="totalViews"/>
+        <result column="avg_views" property="avgViews"/>
+        <result column="finished_count" property="finishedCount"/>
+        <result column="total_favorites" property="totalFavorites"/>
+    </resultMap>
+
+    <!-- ============ 分类统计：GROUP BY + 各种聚合函数 ============ -->
+    <select id="selectCategoryStat" resultMap="CategoryStatMap">
+        SELECT
+            c.id                                     AS category_id,
+            c.name                                   AS category_name,
+            COUNT(n.id)                              AS novel_count,
+            IFNULL(SUM(n.word_count), 0)             AS total_words,
+            IFNULL(ROUND(AVG(n.word_count), 2), 0)   AS avg_words,
+            IFNULL(MAX(n.word_count), 0)             AS max_words,
+            IFNULL(MIN(n.word_count), 0)             AS min_words,
+            IFNULL(SUM(n.view_count), 0)             AS total_views,
+            IFNULL(ROUND(AVG(n.view_count), 2), 0)   AS avg_views,
+            <!-- CASE WHEN 条件计数：统计已完结作品数 -->
+            SUM(CASE WHEN n.status = 'FINISHED' THEN 1 ELSE 0 END) AS finished_count,
+            IFNULL(SUM(n.favorite_count), 0)         AS total_favorites
+        FROM category c
+        LEFT JOIN novel n ON n.category_id = c.id AND n.deleted = 0
+        WHERE c.deleted = 0
+        GROUP BY c.id, c.name
+        ORDER BY novel_count DESC
+    </select>
+
+    <!-- ============ 作者排行：HAVING 过滤分组结果 ============ -->
+    <select id="selectAuthorRank" resultType="map">
+        SELECT
+            author,
+            COUNT(*)                            AS novel_count,
+            SUM(view_count)                     AS total_views,
+            SUM(favorite_count)                 AS total_favorites,
+            SUM(chapter_count)                  AS total_chapters,
+            ROUND(AVG(view_count), 0)           AS avg_views
+        FROM novel
+        WHERE deleted = 0
+          AND author IS NOT NULL
+          AND author &lt;&gt; ''
+        GROUP BY author
+        HAVING COUNT(*) &gt;= #{minCount}
+        ORDER BY total_views DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ============ 总览：多表 UNION + 标量子查询汇总 ============ -->
+    <select id="selectOverview" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM novel WHERE deleted = 0)                     AS novel_total,
+            (SELECT COUNT(*) FROM chapter)                                     AS chapter_total,
+            (SELECT COUNT(*) FROM sys_user WHERE deleted = 0)                  AS user_total,
+            (SELECT COUNT(*) FROM sys_user WHERE deleted = 0 AND role='ADMIN') AS admin_total,
+            (SELECT COUNT(*) FROM favorite)                                    AS favorite_total,
+            (SELECT COUNT(*) FROM reading_history)                             AS history_total,
+            (SELECT COUNT(*) FROM download_task)                               AS task_total,
+            (SELECT COUNT(*) FROM download_task WHERE status = 'COMPLETED')    AS task_completed,
+            (SELECT COUNT(*) FROM download_task WHERE status IN ('QUEUED','DOWNLOADING')) AS task_running,
+            (SELECT IFNULL(SUM(word_count), 0) FROM novel WHERE deleted = 0)   AS word_total,
+            (SELECT IFNULL(SUM(view_count), 0) FROM novel WHERE deleted = 0)   AS view_total,
+            (SELECT IFNULL(ROUND(AVG(word_count),0),0) FROM novel WHERE deleted = 0) AS avg_word
+    </select>
+
+    <!-- ============ 每日新增小说：日期函数 GROUP BY 日期 ============ -->
+    <select id="selectDailyNovelCount" resultType="map">
+        SELECT
+            DATE_FORMAT(create_time, '%m-%d') AS day_label,
+            COUNT(*)                          AS cnt
+        FROM novel
+        WHERE deleted = 0
+          AND create_time &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        GROUP BY DATE_FORMAT(create_time, '%m-%d')
+        ORDER BY day_label ASC
+    </select>
+
+    <!-- ============ 每日下载数 ============ -->
+    <select id="selectDailyDownloadCount" resultType="map">
+        SELECT
+            DATE_FORMAT(create_time, '%m-%d') AS day_label,
+            COUNT(*)                          AS cnt,
+            SUM(done_chapter)                 AS chapters
+        FROM download_task
+        WHERE create_time &gt;= DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        GROUP BY DATE_FORMAT(create_time, '%m-%d')
+        ORDER BY day_label ASC
+    </select>
+
+    <!-- ============ 用户活跃排行：多表 JOIN + 聚合 ============ -->
+    <select id="selectUserActiveRank" resultType="map">
+        SELECT
+            u.id                                   AS user_id,
+            u.username,
+            u.nickname,
+            COUNT(DISTINCT h.id)                   AS read_novels,
+            COUNT(DISTINCT f.id)                   AS favorites,
+            COUNT(DISTINCT t.id)                   AS downloads,
+            COUNT(DISTINCT h.id) + COUNT(DISTINCT f.id) + COUNT(DISTINCT t.id) AS score
+        FROM sys_user u
+        LEFT JOIN reading_history h ON h.user_id = u.id
+        LEFT JOIN favorite f        ON f.user_id = u.id
+        LEFT JOIN download_task t   ON t.user_id = u.id
+        WHERE u.deleted = 0 AND u.role = 'USER'
+        GROUP BY u.id, u.username, u.nickname
+        ORDER BY score DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>后台管理 - 小说阅读器</title>
+    <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+<div class="topbar"><div class="inner"></div></div>
+
+<div class="container" style="padding:20px 16px">
+    <div class="tabs">
+        <span class="active" data-tab="overview">概况统计</span>
+        <span data-tab="novel">小说管理</span>
+        <span data-tab="chapter">章节管理</span>
+        <span data-tab="upload">上传小说</span>
+        <span data-tab="category">分类管理</span>
+        <span data-tab="user">用户管理</span>
+        <span data-tab="task">下载任务</span>
+    </div>
+
+    <!-- ============ 概览 ============ -->
+    <div class="section active" id="sec-overview">
+        <div class="stat-grid" id="statCards"></div>
+        <div class="panel" style="margin-bottom:16px">
+            <div class="panel-title">分类统计（GROUP BY + 聚合函数）</div>
+            <table>
+                <thead><tr><th>分类</th><th>小说数</th><th>总字数</th><th>平均字数</th><th>最高字数</th><th>总浏览</th><th>平均浏览</th><th>已完结</th></tr></thead>
+                <tbody id="catStatTable"></tbody>
+            </table>
+        </div>
+        <div class="panel" style="margin-bottom:16px">
+            <div class="panel-title">作者排行（HAVING + LIMIT）</div>
+            <table>
+                <thead><tr><th>作者</th><th>作品数</th><th>章节总数</th><th>总浏览</th><th>总收藏</th><th>平均浏览</th></tr></thead>
+                <tbody id="authorTable"></tbody>
+            </table>
+        </div>
+        <div class="panel">
+            <div class="panel-title">用户活跃排行（多表 JOIN）</div>
+            <table>
+                <thead><tr><th>用户</th><th>阅读过的书</th><th>收藏数</th><th>下载数</th><th>活跃分</th></tr></thead>
+                <tbody id="activeTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============ 小说管理 ============ -->
+    <div class="section" id="sec-novel">
+        <div class="panel" style="margin-bottom:16px">
+            <div class="inline">
+                <div class="form-item"><label>关键字</label><input id="nKeyword" placeholder="书名/作者"></div>
+                <div class="form-item"><label>分类</label><select id="nCategory"><option value="">全部</option></select></div>
+                <div class="form-item"><label>状态</label><select id="nStatus">
+                    <option value="">全部</option><option value="SERIALIZING">连载中</option><option value="FINISHED">已完结</option></select></div>
+                <button class="btn" onclick="loadNovelList(1)">查询</button>
+                <button class="btn gray" onclick="document.getElementById('nKeyword').value='';document.getElementById('nCategory').value='';document.getElementById('nStatus').value='';loadNovelList(1)">重置</button>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">
+                小说列表
+                <button class="btn small green" onclick="openNovelEdit(null)">+ 新增小说</button>
+                <button class="btn small red" onclick="batchDeleteNovel()">批量删除</button>
+            </div>
+            <table>
+                <thead><tr><th><input type="checkbox" id="nCheckAll" onclick="toggleAll(this,'nCheck')"></th><th>ID</th><th>书名</th><th>作者</th><th>分类</th><th>标签</th><th>章节</th><th>字数</th><th>浏览</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="novelTable"></tbody>
+            </table>
+            <div class="empty" id="novelEmpty" style="display:none">暂无数据</div>
+            <div class="pager" id="novelPager"></div>
+        </div>
+    </div>
+
+    <!-- ============ 章节管理 ============ -->
+    <div class="section" id="sec-chapter">
+        <div class="panel" style="margin-bottom:16px">
+            <div class="inline">
+                <div class="form-item"><label>选择小说</label><select id="cNovel" style="min-width:260px" onchange="loadChapterList(1)"></select></div>
+                <div class="form-item"><label>标题关键字</label><input id="cKeyword" placeholder="章节标题"></div>
+                <button class="btn" onclick="loadChapterList(1)">查询</button>
+                <button class="btn green" onclick="openChapterEdit(null)">+ 新增章节</button>
+            </div>
+        </div>
+        <div class="panel">
+            <table>
+                <thead><tr><th>序号</th><th>标题</th><th>字数</th><th>创建时间</th><th>操作</th></tr></thead>
+                <tbody id="chapterTable"></tbody>
+            </table>
+            <div class="empty" id="chapterEmpty" style="display:none">请先选择小说</div>
+            <div class="pager" id="chapterPager"></div>
+        </div>
+    </div>
+
+    <!-- ============ 上传 ============ -->
+    <div class="section" id="sec-upload">
+        <div class="panel" style="max-width:640px">
+            <div class="panel-title">上传 TXT 小说（自动分章）</div>
+            <div class="inline" style="margin-bottom:12px">
+                <div class="form-item"><label>书名（留空则用文件名）</label><input id="uTitle"></div>
+                <div class="form-item"><label>作者</label><input id="uAuthor"></div>
+                <div class="form-item"><label>分类</label><select id="uCategory"></select></div>
+                <div class="form-item"><label>连载状态</label><select id="uStatus">
+                    <option value="SERIALIZING">连载中</option><option value="FINISHED">已完结</option></select></div>
+            </div>
+            <div class="form-item" style="display:block;margin-bottom:12px">
+                <label>简介</label><textarea id="uDescription" rows="3" style="width:100%"></textarea>
+            </div>
+            <div class="form-item" style="display:block;margin-bottom:14px">
+                <label>选择 TXT 文件（需包含「第X章」这样的标题才能正确分章）</label>
+                <input type="file" id="uFile" accept=".txt" style="min-width:100%">
+            </div>
+            <button class="btn" onclick="uploadNovel()">开始上传</button>
+            <div id="uploadResult" style="margin-top:16px"></div>
+            <p style="margin-top:14px;color:#999;font-size:12px">
+                实现要点：读取文件自动识别 UTF-8/GBK 编码 → 正则切分章节 → 一条 INSERT 批量入库（&lt;foreach&gt;）→ 回写字数统计，整个过程在一个事务里。
+            </p>
+        </div>
+    </div>
+
+    <!-- ============ 分类管理 ============ -->
+    <div class="section" id="sec-category">
+        <div class="panel" style="margin-bottom:16px">
+            <div class="inline">
+                <div class="form-item"><label>分类名</label><input id="catName" placeholder="如：玄幻奇幻"></div>
+                <div class="form-item"><label>描述</label><input id="catDesc"></div>
+                <div class="form-item"><label>排序号</label><input id="catSort" type="number" value="0"></div>
+                <button class="btn" onclick="saveCategory()">新增分类</button>
+            </div>
+        </div>
+        <div class="panel">
+            <table>
+                <thead><tr><th>ID</th><th>分类名</th><th>描述</th><th>排序</th><th>小说数</th><th>操作</th></tr></thead>
+                <tbody id="categoryTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============ 用户管理 ============ -->
+    <div class="section" id="sec-user">
+        <div class="panel" style="margin-bottom:16px">
+            <div class="inline">
+                <div class="form-item"><label>关键字</label><input id="uKeyword" placeholder="账号/昵称"></div>
+                <div class="form-item"><label>角色</label><select id="uRole">
+                    <option value="">全部</option><option value="ADMIN">管理员</option><option value="USER">普通用户</option></select></div>
+                <div class="form-item"><label>状态</label><select id="uStatus">
+                    <option value="">全部</option><option value="1">正常</option><option value="0">禁用</option></select></div>
+                <button class="btn" onclick="loadUserList(1)">查询</button>
+                <button class="btn red" onclick="batchDeleteUser()">批量删除</button>
+            </div>
+        </div>
+        <div class="panel">
+            <table>
+                <thead><tr><th><input type="checkbox" id="uCheckAll" onclick="toggleAll(this,'uCheck')"></th><th>ID</th><th>账号</th><th>昵称</th><th>角色</th><th>状态</th><th>注册时间</th><th>操作</th></tr></thead>
+                <tbody id="userTable"></tbody>
+            </table>
+            <div class="pager" id="userPager"></div>
+        </div>
+    </div>
+
+    <!-- ============ 下载任务 ============ -->
+    <div class="section" id="sec-task">
+        <div class="panel" style="margin-bottom:16px">
+            <div class="inline">
+                <div class="form-item"><label>状态</label><select id="tStatus">
+                    <option value="">全部</option>
+                    <option value="QUEUED">排队中</option><option value="DOWNLOADING">下载中</option>
+                    <option value="PAUSED">已暂停</option><option value="COMPLETED">已完成</option>
+                    <option value="CANCELLED">已停止</option><option value="FAILED">失败</option></select></div>
+                <div class="form-item"><label>关键字</label><input id="tKeyword" placeholder="书名/任务号"></div>
+                <button class="btn" onclick="loadTaskList(1)">查询</button>
+                <button class="btn blue" onclick="loadTaskList(document.getElementById('tPage').value||1)">刷新进度</button>
+                <input type="hidden" id="tPage" value="1">
+            </div>
+        </div>
+        <div class="panel">
+            <table>
+                <thead><tr><th>任务号</th><th>用户</th><th>书名</th><th>状态</th><th>进度</th><th>章节</th><th>大小</th><th>时间</th><th>操作</th></tr></thead>
+                <tbody id="taskTable"></tbody>
+            </table>
+            <div class="empty" id="taskEmpty" style="display:none">暂无任务</div>
+            <div class="pager" id="taskPager"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 通用弹窗 -->
+<div class="modal-mask" id="mask">
+    <div class="modal">
+        <h3 id="modalTitle">编辑</h3>
+        <div id="modalBody"></div>
+        <div class="modal-footer">
+            <button class="btn gray" onclick="closeModal()">取消</button>
+            <button class="btn" id="modalOk">确定</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+    // ================= 通用 =================
+    function openModal(title, bodyHtml, onOk) {
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalBody').innerHTML = bodyHtml;
+        document.getElementById('modalOk').onclick = () => { onOk(); };
+        document.getElementById('mask').classList.add('show');
+    }
+    function closeModal() { document.getElementById('mask').classList.remove('show'); }
+    document.getElementById('mask').onclick = e => { if (e.target.id === 'mask') closeModal(); };
+
+    function toggleAll(src, name) {
+        document.querySelectorAll(`input[name="${name}"]`).forEach(i => i.checked = src.checked);
+    }
+    function checkedValues(name) {
+        return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value);
+    }
+
+    document.querySelectorAll('.tabs span').forEach(tab => {
+        tab.onclick = () => {
+            document.querySelectorAll('.tabs span').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('sec-' + tab.dataset.tab).classList.add('active');
+            if (tab.dataset.tab === 'overview') safe(loadOverview);
+            if (tab.dataset.tab === 'novel') safe(() => loadNovelList(1));
+            if (tab.dataset.tab === 'chapter') safe(loadNovelOptions);
+            if (tab.dataset.tab === 'category') safe(loadCategoryList);
+            if (tab.dataset.tab === 'user') safe(() => loadUserList(1));
+            if (tab.dataset.tab === 'task') safe(() => loadTaskList(1));
+        };
+    });
+
+    async function loadNovelOptions() {
+        const list = await get('/api/novels?pageNum=1&pageSize=500');
+        document.getElementById('cNovel').innerHTML =
+            (list.list || []).map(n => `<option value="${n.id}">${escapeHtml(n.title)}</option>`).join('');
+        if ((list.list || []).length) await loadChapterList(1);
+    }
+
+    async function loadCategorySelect(selectId) {
+        const list = await get('/api/categories');
+        const html = '<option value="">全部</option>' +
+            (list || []).map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+        document.getElementById(selectId).innerHTML = html;
+    }
+
+    // ================= 概览 =================
+    async function loadOverview() {
+        const d = await get('/api/novels/stat/overview');
+        if (!d) return;
+        const cards = [
+            ['作品总数', d.novel_total], ['章节总数', d.chapter_total],
+            ['注册用户', d.user_total], ['管理员', d.admin_total],
+            ['收藏总数', d.favorite_total], ['书架记录', d.history_total],
+            ['下载任务', d.task_total], ['下载完成', d.task_completed],
+            ['正在进行', d.task_running], ['总字数', formatNumber(d.word_total)],
+            ['总浏览', formatNumber(d.view_total)], ['平均字数', d.avg_word]
+        ];
+        document.getElementById('statCards').innerHTML = cards.map(([label, num]) =>
+            `<div class="stat-card"><div class="num">${num ?? 0}</div><div class="label">${label}</div></div>`).join('');
+
+        document.getElementById('catStatTable').innerHTML = (d.categoryStat || []).map(s => `
+            <tr><td>${escapeHtml(s.categoryName)}</td><td>${s.novelCount}</td><td>${formatNumber(s.totalWords)}</td>
+            <td>${s.avgWords}</td><td>${formatNumber(s.maxWords)}</td><td>${formatNumber(s.totalViews)}</td>
+            <td>${s.avgViews}</td><td>${s.finishedCount}</td></tr>`).join('');
+
+        const ar = await get('/api/novels/stat/author?minCount=1&limit=10');
+        document.getElementById('authorTable').innerHTML = (ar && ar.list || []).map(a => `
+            <tr><td>${escapeHtml(a.author)}</td><td>${a.novel_count}</td><td>${a.total_chapters || 0}</td>
+            <td>${formatNumber(a.total_views)}</td><td>${a.total_favorites || 0}</td><td>${a.avg_views || 0}</td></tr>`).join('');
+
+        const rank = await get('/api/novels/stat/user-rank?limit=10');
+        document.getElementById('activeTable').innerHTML = (rank || []).map(u => `
+            <tr><td>${escapeHtml(u.nickname || u.username)}</td><td>${u.read_novels}</td><td>${u.favorites}</td>
+            <td>${u.downloads}</td><td><b>${u.score}</b></td></tr>`).join('');
+    }
+
+    // ================= 小说管理 =================
+    async function loadNovelList(page = 1) {
+        const p = new URLSearchParams({ pageNum: page, pageSize: 10 });
+        const kw = document.getElementById('nKeyword').value.trim();
+        const cid = document.getElementById('nCategory').value;
+        const st = document.getElementById('nStatus').value;
+        if (kw) p.set('keyword', kw);
+        if (cid) p.set('categoryId', cid);
+        if (st) p.set('status', st);
+
+        const data = await get('/api/novels?' + p.toString());
+        if (!data) return;
+        document.getElementById('novelTable').innerHTML = data.list.map(n => `
+            <tr>
+                <td><input type="checkbox" name="nCheck" value="${n.id}"></td>
+                <td>${n.id}</td>
+                <td><b>${escapeHtml(n.title)}</b></td>
+                <td>${escapeHtml(n.author || '-')}</td>
+                <td>${escapeHtml(n.categoryName || '-')}</td>
+                <td>${(n.tags || []).map(t => escapeHtml(t)).join('、') || '-'}</td>
+                <td>${n.chapterCount}</td>
+                <td>${formatNumber(n.wordCount)}</td>
+                <td>${formatNumber(n.viewCount)}</td>
+                <td><span class="tag ${statusTag(n.status)}">${statusText(n.status)}</span></td>
+                <td style="white-space:nowrap">
+                    <button class="btn small blue" onclick="openNovelEdit(${n.id})">编辑</button>
+                    <button class="btn small gray" onclick="manageChapter(${n.id})">章节</button>
+                    <button class="btn small red" onclick="deleteNovel(${n.id})">删除</button>
+                </td>
+            </tr>`).join('');
+        document.getElementById('novelEmpty').style.display = data.list.length ? 'none' : 'block';
+        renderPager(document.getElementById('novelPager'), data, loadNovelList);
+    }
+
+    let editingNovel = null;
+    async function openNovelEdit(id) {
+        const cats = await get('/api/categories');
+        let novel = { title: '', author: '', categoryId: '', tags: '', description: '', status: 'SERIALIZING' };
+        if (id) {
+            const list = await get(`/api/novels?pageNum=1&pageSize=500`);
+            novel = list.list.find(n => n.id === id) || novel;
+            editingNovel = novel;
+        } else {
+            editingNovel = null;
+        }
+        const catOptions = (cats || []).map(c =>
+            `<option value="${c.id}" ${String(c.categoryId) === String(c.id) ? '' : ''}>${escapeHtml(c.name)}</option>`).join('');
+        openModal(id ? '编辑小说' : '新增小说', `
+            <div class="form-item" style="display:block;width:100%"><label>书名</label>
+                <input id="eTitle" style="width:100%" value="${escapeHtml(novel.title || '')}"></div>
+            <div class="inline">
+                <div class="form-item"><label>作者</label><input id="eAuthor" value="${escapeHtml(novel.author || '')}"></div>
+                <div class="form-item"><label>分类</label><select id="eCategory">${catOptions}</select></div>
+                <div class="form-item"><label>状态</label><select id="eStatus">
+                    <option value="SERIALIZING">连载中</option><option value="FINISHED">已完结</option></select></div>
+            </div>
+            <div class="form-item" style="display:block;width:100%"><label>标签（英文逗号分隔）</label>
+                <input id="eTags" style="width:100%" value="${(novel.tags || []).join(',')}" placeholder="玄幻,热血,升级"></div>
+            <div class="form-item" style="display:block;width:100%"><label>封面URL</label>
+                <input id="eCover" style="width:100%" value="${escapeHtml(novel.coverUrl || '')}"></div>
+            <div class="form-item" style="display:block;width:100%"><label>简介</label>
+                <textarea id="eDesc" rows="4" style="width:100%">${escapeHtml(novel.description || '')}</textarea></div>
+        `, async () => {
+            const body = {
+                title: document.getElementById('eTitle').value.trim(),
+                author: document.getElementById('eAuthor').value.trim(),
+                categoryId: document.getElementById('eCategory').value || null,
+                status: document.getElementById('eStatus').value,
+                coverUrl: document.getElementById('eCover').value.trim(),
+                description: document.getElementById('eDesc').value.trim(),
+                tags: document.getElementById('eTags').value.split(/[,，]/).map(s => s.trim()).filter(Boolean)
+            };
+            if (!body.title) return toast('书名不能为空');
+            if (editingNovel) { body.id = editingNovel.id; await putJson('/api/novels', body); }
+            else await post('/api/novels', body);
+            closeModal();
+            await loadNovelList(1);
+        });
+        if (id) {
+            document.getElementById('eCategory').value = novel.categoryId || '';
+            document.getElementById('eStatus').value = novel.status || 'SERIALIZING';
+        }
+    }
+
+    async function deleteNovel(id) {
+        if (!confirm('确定删除该小说？会同时删除其章节、收藏和阅读记录')) return;
+        await del(`/api/novels/${id}`);
+        await loadNovelList(1);
+    }
+
+    async function batchDeleteNovel() {
+        const ids = checkedValues('nCheck');
+        if (!ids.length) return toast('请先选择要删除的小说');
+        if (!confirm(`确定删除选中的 ${ids.length} 本小说？`)) return;
+        await post('/api/novels/batch-delete', ids);
+        await loadNovelList(1);
+    }
+
+    function manageChapter(novelId) {
+        document.querySelector('.tabs span[data-tab="chapter"]').click();
+        document.getElementById('cNovel').value = novelId;
+        loadChapterList(1);
+    }
+
+    // ================= 章节管理 =================
+    async function loadChapterList(page = 1) {
+        const novelId = document.getElementById('cNovel').value;
+        if (!novelId) {
+            document.getElementById('chapterTable').innerHTML = '';
+            document.getElementById('chapterEmpty').style.display = 'block';
+            return;
+        }
+        const kw = document.getElementById('cKeyword').value.trim();
+        let url = `/api/chapters/catalog-page/${novelId}?pageNum=${page}&pageSize=10`;
+        if (kw) url += '&title=' + encodeURIComponent(kw);
+        const data = await get(url);
+        if (!data) return;
+        document.getElementById('chapterTable').innerHTML = data.list.map(c => `
+            <tr><td>${c.chapterNo}</td><td>${escapeHtml(c.title)}</td><td>${formatNumber(c.wordCount)}</td>
+            <td>${formatTime(c.createTime)}</td>
+            <td><button class="btn small blue" onclick="openChapterEdit(${c.id})">编辑</button>
+                <button class="btn small red" onclick="deleteChapter(${c.id})">删除</button></td></tr>`).join('');
+        document.getElementById('chapterEmpty').style.display = data.list.length ? 'none' : 'block';
+        renderPager(document.getElementById('chapterPager'), data, loadChapterList);
+    }
+
+    let editingChapter = null;
+    function openChapterEdit(chapterId) {
+        const novelId = document.getElementById('cNovel').value;
+        if (!novelId && !chapterId) return toast('请先选择小说');
+        editingChapter = chapterId || null;
+        const body = `
+            <div class="form-item" style="display:block;width:100%"><label>章节标题</label>
+                <input id="ceTitle" style="width:100%" placeholder="第一章 xxx"></div>
+            <div class="form-item" style="display:block;width:100%"><label>章节序号（新增时可留空自动追加）</label>
+                <input id="ceNo" type="number" style="width:100%"></div>
+            <div class="form-item" style="display:block;width:100%"><label>正文内容</label>
+                <textarea id="ceContent" rows="10" style="width:100%"></textarea></div>`;
+        openModal(chapterId ? '编辑章节' : '新增章节', body, async () => {
+            const payload = {
+                novelId: Number(document.getElementById('cNovel').value),
+                title: document.getElementById('ceTitle').value.trim(),
+                chapterNo: document.getElementById('ceNo').value ? Number(document.getElementById('ceNo').value) : null,
+                content: document.getElementById('ceContent').value
+            };
+            if (!payload.title) return toast('标题不能为空');
+            if (editingChapter) { payload.id = editingChapter; await putJson('/api/chapters', payload); }
+            else await post('/api/chapters', payload);
+            closeModal();
+            await loadChapterList(1);
+        });
+        if (chapterId) {
+            get(`/api/chapters/${chapterId}`).then(d => {
+                document.getElementById('ceTitle').value = d.chapter.title;
+                document.getElementById('ceNo').value = d.chapter.chapterNo;
+                document.getElementById('ceContent').value = d.chapter.content || '';
+            });
+        }
+    }
+
+    async function deleteChapter(id) {
+        if (!confirm('确定删除该章节？')) return;
+        await del(`/api/chapters/${id}`);
+        await loadChapterList(1);
+    }
+
+    // ================= 上传 =================
+    async function uploadNovel() {
+        const fileInput = document.getElementById('uFile');
+        if (!fileInput.files.length) return toast('请选择文件');
+        const form = new FormData();
+        form.append('file', fileInput.files[0]);
+        const t = document.getElementById('uTitle').value.trim();
+        const a = document.getElementById('uAuthor').value.trim();
+        const c = document.getElementById('uCategory').value;
+        const d = document.getElementById('uDescription').value.trim();
+        const s = document.getElementById('uStatus').value;
+        if (t) form.append('title', t);
+        if (a) form.append('author', a);
+        if (c) form.append('categoryId', c);
+        if (d) form.append('description', d);
+        if (s) form.append('status', s);
+
+        document.getElementById('uploadResult').innerHTML = '<p>上传中，请稍候…</p>';
+        try {
+            const res = await fetch('/api/novels/upload', { method: 'POST', credentials: 'same-origin', body: form });
+            const json = await res.json();
+            if (json.code !== 0) {
+                document.getElementById('uploadResult').innerHTML = `<p style="color:#dc3545">失败：${escapeHtml(json.msg)}</p>`;
+                return;
+            }
+            const r = json.data;
+            document.getElementById('uploadResult').innerHTML = `
+                <div class="panel" style="background:#f8f9fa">
+                    <p><b>上传成功！</b></p>
+                    <p>书名：${escapeHtml(r.title)}（ID: ${r.novelId}）</p>
+                    <p>解析章节数：<b>${r.chapterCount}</b> 章</p>
+                    <p>总字数：<b>${formatNumber(r.wordCount)}</b></p>
+                    <p style="color:#999;font-size:12px">原文件：${escapeHtml(r.filePath)}</p>
+                </div>`;
+            toast('上传成功');
+        } catch (e) {
+            document.getElementById('uploadResult').innerHTML = '<p style="color:#dc3545">上传失败，请重试</p>';
+        }
+    }
+
+    // ================= 分类管理 =================
+    async function loadCategoryList() {
+        const list = await get('/api/categories/with-novels');
+        if (!list) return;
+        document.getElementById('categoryTable').innerHTML = list.map(c => `
+            <tr><td>${c.id}</td><td><b>${escapeHtml(c.name)}</b></td><td>${escapeHtml(c.description || '-')}</td>
+            <td>${c.sortNum}</td><td>${(c.novels || []).length} 本</td>
+            <td style="white-space:nowrap">
+                <button class="btn small blue" onclick="editCategory(${c.id})">编辑</button>
+                <button class="btn small red" onclick="deleteCategory(${c.id})">删除</button></td></tr>`).join('');
+    }
+
+    async function saveCategory() {
+        const name = document.getElementById('catName').value.trim();
+        if (!name) return toast('请输入分类名');
+        await post('/api/categories', {
+            name, description: document.getElementById('catDesc').value.trim(),
+            sortNum: Number(document.getElementById('catSort').value) || 0
+        });
+        document.getElementById('catName').value = '';
+        document.getElementById('catDesc').value = '';
+        await loadCategoryList();
+    }
+
+    async function editCategory(id) {
+        const list = await get('/api/categories');
+        const c = (list || []).find(x => x.id === id);
+        if (!c) return;
+        openModal('编辑分类', `
+            <div class="form-item" style="display:block;width:100%"><label>分类名</label>
+                <input id="cedName" style="width:100%" value="${escapeHtml(c.name)}"></div>
+            <div class="form-item" style="display:block;width:100%"><label>描述</label>
+                <input id="cedDesc" style="width:100%" value="${escapeHtml(c.description || '')}"></div>
+            <div class="form-item" style="display:block;width:100%"><label>排序号</label>
+                <input id="cedSort" type="number" style="width:100%" value="${c.sortNum}"></div>`,
+            async () => {
+                await putJson('/api/categories', {
+                    id, name: document.getElementById('cedName').value.trim(),
+                    description: document.getElementById('cedDesc').value.trim(),
+                    sortNum: Number(document.getElementById('cedSort').value) || 0
+                });
+                closeModal();
+                await loadCategoryList();
+            });
+    }
+
+    async function deleteCategory(id) {
+        if (!confirm('确定删除该分类？')) return;
+        await del(`/api/categories/${id}`);
+        await loadCategoryList();
+    }
+
+    // ================= 用户管理 =================
+    async function loadUserList(page = 1) {
+        const p = new URLSearchParams({ pageNum: page, pageSize: 10 });
+        const kw = document.getElementById('uKeyword').value.trim();
+        const role = document.getElementById('uRole').value;
+        const st = document.getElementById('uStatus').value;
+        if (kw) p.set('keyword', kw);
+        if (role) p.set('role', role);
+        if (st) p.set('status', st);
+
+        const data = await get('/api/users?' + p.toString());
+        if (!data) return;
+        document.getElementById('userTable').innerHTML = data.list.map(u => `
+            <tr>
+                <td>${u.role === 'ADMIN' ? '' : `<input type="checkbox" name="uCheck" value="${u.id}">`}</td>
+                <td>${u.id}</td>
+                <td><b>${escapeHtml(u.username)}</b></td>
+                <td>${escapeHtml(u.nickname || '-')}</td>
+                <td><span class="tag ${u.role === 'ADMIN' ? 'orange' : 'blue'}">${u.role === 'ADMIN' ? '管理员' : '普通用户'}</span></td>
+                <td><span class="tag ${u.status === 1 ? 'green' : 'red'}">${u.status === 1 ? '正常' : '禁用'}</span></td>
+                <td>${escapeHtml(u.createTimeStr || '')}</td>
+                <td style="white-space:nowrap">
+                    <button class="btn small gray" onclick="toggleUserStatus(${u.id},${u.status})">${u.status === 1 ? '禁用' : '启用'}</button>
+                    <button class="btn small blue" onclick="resetPwd(${u.id})">改密</button>
+                    <button class="btn small red" onclick="deleteUser(${u.id})">删除</button>
+                </td>
+            </tr>`).join('');
+        renderPager(document.getElementById('userPager'), data, loadUserList);
+    }
+
+    async function toggleUserStatus(id, status) {
+        await putForm(`/api/users/${id}/status?status=${status === 1 ? 0 : 1}`);
+        await loadUserList(1);
+    }
+    async function resetPwd(id) {
+        const pwd = prompt('请输入新密码（至少 6 位）');
+        if (!pwd) return;
+        await putForm(`/api/users/${id}/password?password=${encodeURIComponent(pwd)}`);
+        toast('已重置');
+    }
+    async function deleteUser(id) {
+        if (!confirm('确定删除该用户？')) return;
+        await del(`/api/users/${id}`);
+        await loadUserList(1);
+    }
+    async function batchDeleteUser() {
+        const ids = checkedValues('uCheck');
+        if (!ids.length) return toast('请先选择要删除的用户');
+        if (!confirm(`确定删除选中的 ${ids.length} 个用户？`)) return;
+        await post('/api/users/batch-delete', ids);
+        await loadUserList(1);
+    }
+
+    // ================= 下载任务 =================
+    let taskTimer = null;
+    async function loadTaskList(page = 1) {
+        document.getElementById('tPage').value = page;
+        const p = new URLSearchParams({ pageNum: page, pageSize: 10 });
+        const st = document.getElementById('tStatus').value;
+        const kw = document.getElementById('tKeyword').value.trim();
+        if (st) p.set('status', st);
+        if (kw) p.set('keyword', kw);
+
+        const data = await get('/api/downloads?' + p.toString());
+        if (!data) return;
+        document.getElementById('taskTable').innerHTML = data.list.map(t => `
+            <tr>
+                <td style="font-size:12px">${escapeHtml(t.taskNo)}</td>
+                <td>${escapeHtml(t.title)}</td>
+                <td><span class="tag ${statusTag(t.status)}">${statusText(t.status)}</span></td>
+                <td style="min-width:120px">
+                    <div class="progress"><i style="width:${t.percent}%"></i></div>
+                    <span style="font-size:12px;color:#999">${t.percent}%</span>
+                </td>
+                <td>${t.doneChapter}/${t.totalChapter}</td>
+                <td>${formatSize(t.fileSize)}</td>
+                <td>${formatTime(t.createTime)}</td>
+                <td style="white-space:nowrap">
+                    ${t.status === 'DOWNLOADING' ? `<button class="btn small gray" onclick="pauseTask(${t.id})">暂停</button>` : ''}
+                    ${t.status === 'PAUSED' ? `<button class="btn small green" onclick="resumeTask(${t.id})">继续</button>` : ''}
+                    ${['QUEUED','DOWNLOADING','PAUSED'].includes(t.status) ? `<button class="btn small red" onclick="cancelTask(${t.id})">停止</button>` : ''}
+                </td>
+            </tr>`).join('');
+        document.getElementById('taskEmpty').style.display = data.list.length ? 'none' : 'block';
+        renderPager(document.getElementById('taskPager'), data, loadTaskList);
+
+        // 有进行中的任务就自动刷新进度
+        const running = data.list.some(t => t.status === 'DOWNLOADING');
+        clearTimeout(taskTimer);
+        if (running) taskTimer = setTimeout(() => loadTaskList(page), 1200);
+    }
+
+    async function pauseTask(id) { await putForm(`/api/downloads/${id}/pause`); await loadTaskList(1); }
+    async function resumeTask(id) { await putForm(`/api/downloads/${id}/resume`); await loadTaskList(1); }
+    async function cancelTask(id) { await putForm(`/api/downloads/${id}/cancel`); await loadTaskList(1); }
+
+    // ================= 初始化 =================
+    (async () => {
+        const u = await requireAdmin();
+        if (!u) return;
+        renderTopbar('admin');
+        await loadCategorySelect('nCategory');
+        await loadCategorySelect('uCategory');
+        await loadOverview();
+    })();
+</script>
+</body>
+</html>
